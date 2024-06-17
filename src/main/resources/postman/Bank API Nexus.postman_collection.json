@@ -1,0 +1,2093 @@
+{
+	"info": {
+		"_postman_id": "2748633d-a89b-4053-a69a-2cfd02753429",
+		"name": "Bank API Nexus",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "13644221"
+	},
+	"item": [
+		{
+			"name": "Dynamic Client Registration",
+			"item": [
+				{
+					"name": "Register Client",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var resp = pm.response.json()\r",
+									"if( pm.response.to.have.status(201)){\r",
+									"pm.environment.set(\"clientId\", resp.client_id);\r",
+									"pm.environment.set(\"registration_access_token\", resp.registration_access_token);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n\"client_name\": \"11TestName1221\",\r\n\"redirect_uris\": [\"{{redirectUrl}}\"],\r\n\"jwks_uri\": \"https://www.jsonkeeper.com/b/3FJT\",\r\n\"scope\": \"client.create client.read fdx:transactions:read fdx:accountbasic:read openid fdx:customerpersonal:read fdx:accountdetailed:read fdx:investments:read fdx:paymentsupport:read fdx:accountpayments:read fdx:bills:read fdx:images:read fdx:rewards:read fdx:tax:read fdx:statements:read fdx:customercontact:read\",\r\n\"token_endpoint_auth_method\": \"private_key_jwt\",\r\n\"token_endpoint_auth_signing_alg\": \"PS256\",\r\n\"grant_types\": [\r\n    \"client_credentials\",\r\n    \"authorization_code\",\r\n    \"refresh_token\"\r\n],\r\n\"response_types\": [\r\n    \"code\"\r\n],\r\n\"id_token_signed_response_alg\": \"PS256\",\r\n\"id_token_encrypted_response_alg\": \"RSA-OAEP\",\r\n\"id_token_encrypted_response_enc\": \"A256GCM\",\r\n\"request_object_signing_alg\": \"PS256\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/fdx/v6/register",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"fdx",
+								"v6",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var resp = pm.response.json()",
+									"pm.environment.set(\"registration_access_token\", resp.access_token)",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Based onm: https://faun.pub/auto-generating-jwt-tokens-with-postman-2b6dd4e29897",
+									"",
+									"eval( pm.globals.get('pmlib_code') )",
+									"var uuid = require('uuid')",
+									"",
+									"",
+									"const jwtSecret = pm.environment.get('drJwtSecret') || ''",
+									"const dataholderClientId = pm.variables.replaceIn(\"{{clientId}}\") || ''",
+									"const dataholderIssuer = pm.variables.replaceIn(\"{{dataholderIssuer}}\") || ''",
+									"// Set headers for JWT",
+									"var header = {",
+									"\t'typ': 'JWT',",
+									"\t'alg': 'PS256'",
+									"};",
+									"",
+									"// Prepare timestamp in seconds",
+									"var currentTimestamp = Math.floor(Date.now() / 1000)",
+									"",
+									"console.log(\"ClientID: \", dataholderClientId)",
+									"var payload = {",
+									"\t'iss': dataholderClientId,",
+									"\t'sub': dataholderClientId,",
+									"\t'iat': currentTimestamp,",
+									"\t'exp': currentTimestamp + 3000, // expiry time is 30 seconds from time of creation",
+									"\t\"aud\": dataholderIssuer,",
+									"\t\"jti\": uuid.v4()",
+									"}",
+									" ",
+									"const signedToken = pmlib.jwtSign(jwtSecret,payload, header, 3600, 'PS256')",
+									"",
+									"pm.environment.set('dataholderATAssertionJwt', signedToken)",
+									"console.log('Signed and encoded JWT', signedToken)"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "client_credentials",
+									"type": "text"
+								},
+								{
+									"key": "scope",
+									"value": "client.read",
+									"type": "text"
+								},
+								{
+									"key": "client_assertion_type",
+									"value": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+									"type": "text"
+								},
+								{
+									"key": "client_assertion",
+									"value": "{{dataholderATAssertionJwt}}",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "{{clientId}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{host}}/oauth2/token",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"oauth2",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Modify Client",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{registration_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n\"client_name\": \"11TestName12211112\",\r\n\"redirect_uris\": [\"https://oauth.pstmn.io/v1/browser-callback\"],\r\n\"jwks_uri\": \"https://www.jsonkeeper.com/b/3FJT\",\r\n\"scope\": \"client.create client.read\",\r\n\"token_endpoint_auth_method\": \"private_key_jwt\",\r\n\"token_endpoint_auth_signing_alg\": \"PS256\",\r\n\"grant_types\": [\r\n    \"client_credentials\",\r\n    \"authorization_code\",\r\n    \"refresh_token\"\r\n],\r\n\"response_types\": [\r\n    \"code\"\r\n],\r\n\"id_token_signed_response_alg\": \"PS256\",\r\n\"id_token_encrypted_response_alg\": \"RSA-OAEP\",\r\n\"id_token_encrypted_response_enc\": \"A256GCM\",\r\n\"request_object_signing_alg\": \"PS256\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/fdx/v6/register/{{clientId}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"fdx",
+								"v6",
+								"register",
+								"{{clientId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Client",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{registration_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/fdx/v6/register/{{clientId}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"fdx",
+								"v6",
+								"register",
+								"{{clientId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Client",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{registration_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{dataholderDcrAccessToken}}",
+								"disabled": true
+							},
+							{
+								"key": "scope",
+								"value": "client.create client.read",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{host}}/fdx/v6/register/{{clientId}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"fdx",
+								"v6",
+								"register",
+								"{{clientId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "PAR+RAR Authorize",
+			"item": [
+				{
+					"name": "Authorize (via PAR+RAR)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Based onm: https://faun.pub/auto-generating-jwt-tokens-with-postman-2b6dd4e29897\r",
+									"\r",
+									"eval( pm.globals.get('pmlib_code') )\r",
+									"var uuid = require('uuid')\r",
+									"\r",
+									"const jwtSecret = pm.environment.get('drJwtSecret') || ''\r",
+									"const dataholderClientId = pm.variables.replaceIn(\"{{clientId}}\") || ''\r",
+									"const adrRedirectUrl = pm.variables.replaceIn(\"{{redirectUrl}}\") || ''\r",
+									"//const adrRedirectUrl = \"https://localhost:9001/consent/callback\"\r",
+									"const adrAuthState = pm.variables.replaceIn(\"{{adrAuthState}}\") || ''\r",
+									"const dataholderIssuer = pm.variables.replaceIn(\"{{dataholderIssuer}}\") || ''\r",
+									"const dataholderAccessSharingDuration = parseInt(pm.variables.replaceIn(\"{{dataholderAccessSharingDuration}}\"))\r",
+									"const dataholderAccessDuration = parseInt(pm.variables.replaceIn(\"{{dataholderAccessDuration}}\"))\r",
+									"const clientId = pm.variables.replaceIn(\"{{client_id}}\") || ''\r",
+									"const oauth2ResponseType = pm.variables.replaceIn(\"{{oauth2_response_type}}\")\r",
+									"const oauth2ResponseMode = pm.variables.replaceIn(\"{{oauth2_response_mode}}\")\r",
+									"const pkce_code_challenge = pm.variables.replaceIn(\"{{pkce_code_challenge}}\")\r",
+									"\r",
+									"\r",
+									"// Set headers for JWT\r",
+									"var header = {\r",
+									"\t'typ': 'JWT',\r",
+									"\t'alg': 'PS256'\r",
+									"};\r",
+									"\r",
+									"// Prepare timestamp in seconds\r",
+									"var currentTimestamp = Math.floor(Date.now() / 1000)\r",
+									"\r",
+									"// Based on https://consumerdatastandardsaustralia.github.io/register/#registration-request-using-jwt\r",
+									"console.log(\"dataholderClientId: \", dataholderClientId)\r",
+									"\r",
+									"var authorisationRequestClaims = {\r",
+									"\t\t//consent_id: \"68559c89-261e-41d8-8f07-87b765089a4b\",\r",
+									"        sharing_duration: dataholderAccessSharingDuration\r",
+									"}\r",
+									"\r",
+									"\r",
+									"var payload = {\r",
+									"\t'iss': dataholderClientId,\r",
+									"\t//'sub': \"user1\"  // PAR enforces ISS != SUB, plus we may not know the sub, so leave out.\r",
+									"\t'iat': currentTimestamp,\r",
+									"\t'exp': currentTimestamp + dataholderAccessDuration, // expiry time is 300 (5 min) from time of creation\r",
+									"\t\"aud\": dataholderIssuer,\r",
+									"\t\"jti\": uuid.v4(),\r",
+									"    \"response_type\": oauth2ResponseType,\r",
+									"    \"client_id\": dataholderClientId,\r",
+									"    \"redirect_uri\": adrRedirectUrl,\r",
+									"    \"response_mode\": oauth2ResponseMode,\r",
+									"    \"scope\": \"fdx:transactions:read fdx:accountbasic:read openid fdx:customerpersonal:read fdx:accountdetailed:read fdx:investments:read fdx:paymentsupport:read fdx:accountpayments:read fdx:bills:read fdx:images:read fdx:rewards:read fdx:tax:read fdx:statements:read fdx:customercontact:read\",\r",
+									"    \"state\": adrAuthState,\r",
+									"    \"nonce\": uuid.v4(),\r",
+									"    \"code_challenge\": pkce_code_challenge,\r",
+									"    \"code_challenge_method\": \"S256\"\r",
+									"    ,\"claims\": authorisationRequestClaims\r",
+									"}\r",
+									"\r",
+									"var signedToken = pmlib.jwtSign(jwtSecret, payload, header, 3600, 'PS256')\r",
+									"\r",
+									"pm.environment.set('dataholderPARJwt', signedToken)\r",
+									"console.log('dataholderPARJwt', signedToken)\r",
+									"\r",
+									"//// -----\r",
+									"\r",
+									"var payload = {\r",
+									"\t'iss': dataholderClientId,\r",
+									"\t'sub': dataholderClientId,\r",
+									"\t'iat': currentTimestamp,\r",
+									"\t'exp': currentTimestamp + 3000, // expiry time is 30 seconds from time of creation\r",
+									"\t\"aud\": dataholderIssuer,\r",
+									"\t\"jti\": uuid.v4()\r",
+									"}\r",
+									"\r",
+									"var signedToken = pmlib.jwtSign(jwtSecret, payload, header, 3600, 'PS256')\r",
+									"\r",
+									"pm.environment.set('dataholderPARAssertionJwt', signedToken)\r",
+									"console.log('dataholderPARAssertionJwt', signedToken)\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var resp = pm.response.json()\r",
+									"console.log('resp: ', resp)\r",
+									"//console.log('resp.access_token: ', resp.access_token)\r",
+									"// {\"request_uri\":\"urn:mdh:0e31ac90-18a2-43f2-9bc4-323d184248e3\",\"expires_in\":90}\r",
+									"pm.environment.set(\"dhPARInitiateRespRequestUri\", resp.request_uri)\r",
+									"pm.environment.set(\"dhPARInitiateRespExpiresIn\", resp.expires_in)\r",
+									"\r",
+									"// Build the URL Request for Users Browser\r",
+									"const dataholderAuthorizeURl = pm.variables.replaceIn(\"{{dataholderAuthorizeURl}}\")\r",
+									"const dataholderClientId = pm.variables.replaceIn(\"{{clientId}}\")\r",
+									"const oauth2ResponseType = pm.variables.replaceIn(\"{{oauth2_response_type}}\")\r",
+									"const oauth2ResponseMode = pm.variables.replaceIn(\"{{oauth2_response_mode}}\")\r",
+									"const codeChallenge = pm.variables.replaceIn(\"{{pkce_code_challenge}}\")\r",
+									"const redirectUrl = pm.variables.replaceIn(\"{{redirectUrl}}\")\r",
+									"\r",
+									"\r",
+									"var parRedirectUrl = dataholderAuthorizeURl + \r",
+									"    \"?client_id=\" + dataholderClientId + \r",
+									"    \"&response_type=\" + oauth2ResponseType +\r",
+									"    \"&code_challenge=\" + codeChallenge +\r",
+									"    \"&scope=fdx:transactions:read%20fdx:accountbasic:read%20openid%20fdx:customerpersonal:read%20fdx:accountdetailed:read%20fdx:investments:read%20fdx:paymentsupport:read%20fdx:accountpayments:read%20fdx:bills:read%20fdx:images:read%20fdx:rewards:read%20fdx:tax:read%20fdx:statements:read%20fdx:customercontact:read\" +\r",
+									"    \"&code_challenge_method=S256\" + \r",
+									"    \"&redirect_url=\" +redirectUrl+\r",
+									"    \"&request_uri=\" + resp.request_uri\r",
+									"\r",
+									"console.log(\"PAR: parRedirectUrl: \" + parRedirectUrl)\r",
+									"\r",
+									"//---\r",
+									"// Auto Copy Value to Clipboard\r",
+									"//---\r",
+									"let template = `<html><body>\r",
+									"    <script src=\"https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js\"></script>\r",
+									"    <code style=\"width:max-content!important;padding:10px;display:block;\" id=\"copyText\">${parRedirectUrl}</code>\r",
+									"    <button id=\"copyButton\" type=\"button\" data-clipboard-action=\"copy\" data-clipboard-target=\"#copyText\" style=\"background:green;color:white;\">Copy to Clipboard</button>\r",
+									"    <script>\r",
+									"        new ClipboardJS('#copyButton')\r",
+									"            .on('success', function(e) {\r",
+									"                e.clearSelection();\r",
+									"            })\r",
+									"            .on('error', function(e) {\r",
+									"                e.clearSelection();\r",
+									"                copyText.style.borderColor = 'red';\r",
+									"            });\r",
+									"        copyButton.click();\r",
+									"    </script>\r",
+									"</body></html>`;\r",
+									"\r",
+									"pm.visualizer.set(template);\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "client_credentials",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "{{clientId}}",
+									"type": "text"
+								},
+								{
+									"key": "client_assertion_type",
+									"value": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+									"type": "text"
+								},
+								{
+									"key": "client_assertion",
+									"value": "{{dataholderPARAssertionJwt}}",
+									"type": "text"
+								},
+								{
+									"key": "request",
+									"value": "{{dataholderPARJwt}}",
+									"type": "text"
+								},
+								{
+									"key": "response_type",
+									"value": "{{oauth2_response_type}}",
+									"description": "Spring Auth does not support Hybrid Flow so DO NOT send ID_TOKEN",
+									"type": "text"
+								},
+								{
+									"key": "authorization_details",
+									"value": "[{\"type\":\"fdx_v1.0\",\"consentRequest\":{\"durationType\":\"ONE_TIME\",\"lookbackPeriod\":60,\"resources\":[{\"resourceType\":\"ACCOUNT\",\"dataClusters\":[\"ACCOUNT_DETAILED\",\"TRANSACTIONS\",\"STATEMENTS\"]}]}}]",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{host}}/oauth2/par",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"oauth2",
+								"par"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "PAR Authorize (Don't hit copy the url from curl)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/oauth2/authorize?client_id={{clientId}}&response_type={{oauth2_response_type}}&code_challenge={{pkce_code_challenge}}&code_challenge_method=S256&request_uri={{dhPARInitiateRespRequestUri}}&scope={{scope}}&redirect_uri={{redirectUrl}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"oauth2",
+								"authorize"
+							],
+							"query": [
+								{
+									"key": "client_id",
+									"value": "{{clientId}}"
+								},
+								{
+									"key": "response_type",
+									"value": "{{oauth2_response_type}}",
+									"description": "For FinbankAuth removed: id_token, but still returns it"
+								},
+								{
+									"key": "code_challenge",
+									"value": "{{pkce_code_challenge}}"
+								},
+								{
+									"key": "code_challenge_method",
+									"value": "S256"
+								},
+								{
+									"key": "request_uri",
+									"value": "{{dhPARInitiateRespRequestUri}}"
+								},
+								{
+									"key": "scope",
+									"value": "{{scope}}"
+								},
+								{
+									"key": "redirect_uri",
+									"value": "{{redirectUrl}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Non PAR Authorize",
+			"item": [
+				{
+					"name": "Dataholder - Authorize",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Based onm: https://faun.pub/auto-generating-jwt-tokens-with-postman-2b6dd4e29897\r",
+									"\r",
+									"eval( pm.globals.get('pmlib_code') )\r",
+									"var uuid = require('uuid')\r",
+									"\r",
+									"const jwtSecret = pm.variables.get('drJwtSecret') || ''\r",
+									"const dataholderClientId = pm.variables.replaceIn(\"{{clientId}}\") || ''\r",
+									"const adrRedirectUrl = pm.variables.replaceIn(\"{{redirectUrl}}\") || ''\r",
+									"//const adrRedirectUrl = \"https://localhost:9001/consent/callback\"\r",
+									"const adrAuthState = pm.variables.replaceIn(\"{{adrAuthState}}\") || ''\r",
+									"const dataholderIssuer = pm.variables.replaceIn(\"{{dataholderIssuer}}\") || ''\r",
+									"const dataholderAccessSharingDuration = parseInt(pm.variables.replaceIn(\"{{dataholderAccessSharingDuration}}\"))\r",
+									"const dataholderAccessDuration = parseInt(pm.variables.replaceIn(\"{{dataholderAccessDuration}}\"))\r",
+									"const oauth2ResponseType = pm.variables.replaceIn(\"{{oauth2_response_type}}\")\r",
+									"const oauth2ResponseMode = pm.variables.replaceIn(\"{{oauth2_response_mode}}\")\r",
+									"const pkce_code_challenge = pm.variables.replaceIn(\"{{pkce_code_challenge}}\")\r",
+									"\r",
+									"// Set headers for JWT\r",
+									"var header = {\r",
+									"\t'typ': 'JWT',\r",
+									"\t'alg': 'PS256'\r",
+									"};\r",
+									"\r",
+									"// Prepare timestamp in seconds\r",
+									"var currentTimestamp = Math.floor(Date.now() / 1000)\r",
+									"\r",
+									"// Based on https://consumerdatastandardsaustralia.github.io/register/#registration-request-using-jwt\r",
+									"console.log(\"dataholderClientId: \", dataholderClientId)\r",
+									"\r",
+									"var authorisationRequestClaims = {\r",
+									"\t\tsharing_duration: dataholderAccessSharingDuration,  \r",
+									"\t\tcdr_arrangement_id: null,               // \"<null for initial call, value is obtain from token response for future calls ???\"\r",
+									"\t\tuserinfo: {\r",
+									"\t\t\tgiven_name: null,                   // \"<null as not used>\"\r",
+									"\t\t\tfamily_name: null,                  // \"<null as not used>\"\r",
+									"\t\t},\r",
+									"\t\tid_token: {\r",
+									"\t\t\tacr: {\r",
+									"                \"essential\": true,\r",
+									"                \"values\": [\r",
+									"                    \"urn:cds.au:cdr:3\"\r",
+									"                ]\r",
+									"            }\r",
+									"\t\t}    \r",
+									"}\r",
+									"\r",
+									"var pkceClaims = {\r",
+									"\t\t\"code_challenge\": pkce_code_challenge,\r",
+									"        \"code_challenge_method\": \"S256\"\r",
+									"}\r",
+									"\r",
+									"\r",
+									"var payload = {\r",
+									"\t'iss': dataholderClientId,\r",
+									"\t//'sub': \"user1\"  // PAR enforces ISS != SUB, plus we may not know the sub, so leave out.\r",
+									"\t'iat': currentTimestamp,\r",
+									"\t'exp': currentTimestamp + dataholderAccessDuration, // expiry time is 300 (5 min) from time of creation\r",
+									"\t\"aud\": dataholderIssuer,\r",
+									"\t\"jti\": uuid.v4(),\r",
+									"    \"response_type\": oauth2ResponseType,    \r",
+									"    \"client_id\": dataholderClientId,\r",
+									"    \"redirect_uri\": adrRedirectUrl,\r",
+									"    \"response_mode\": oauth2ResponseMode,\r",
+									"    \"scope\": \"fdx:transactions:read fdx:accountbasic:read openid fdx:customerpersonal:read fdx:accountdetailed:read fdx:investments:read fdx:paymentsupport:read fdx:accountpayments:read fdx:bills:read fdx:images:read fdx:rewards:read fdx:tax:read fdx:statements:read fdx:customercontact:read\",\r",
+									"    //\"state\": uuid.v4(),\r",
+									"    \"state\": adrAuthState,\r",
+									"    \"nonce\": uuid.v4(),\r",
+									"    \"code_challenge\": pkce_code_challenge,\r",
+									"    \"code_challenge_method\": \"S256\"\r",
+									"    //,\"claims\": authorisationRequestClaims\r",
+									"}\r",
+									"\r",
+									"const signedToken = pmlib.jwtSign(jwtSecret, payload, header, 3600, 'PS256')\r",
+									"\r",
+									"pm.environment.set('dataholderAuthorisationRequestJwt', signedToken)\r",
+									"console.log('dataholderAuthorisationRequestJwt', signedToken)\r",
+									"\r",
+									"var requestUrl = pm.variables.replaceIn(pm.request.url.toString())\r",
+									"\r",
+									"//---\r",
+									"// Auto Copy Value to Clipboard\r",
+									"//---\r",
+									"let template = `<html><body>\r",
+									"    <script src=\"https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js\"></script>\r",
+									"    <code style=\"width:max-content!important;padding:10px;display:block;\" id=\"copyText\">${requestUrl}</code>\r",
+									"    <button id=\"copyButton\" type=\"button\" data-clipboard-action=\"copy\" data-clipboard-target=\"#copyText\" style=\"background:green;color:white;\">Copy to Clipboard</button>\r",
+									"    <script>\r",
+									"        new ClipboardJS('#copyButton')\r",
+									"            .on('success', function(e) {\r",
+									"                e.clearSelection();\r",
+									"            })\r",
+									"            .on('error', function(e) {\r",
+									"                e.clearSelection();\r",
+									"                copyText.style.borderColor = 'red';\r",
+									"            });\r",
+									"        copyButton.click();\r",
+									"    </script>\r",
+									"</body></html>`;\r",
+									"\r",
+									"pm.visualizer.set(template);\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/oauth2/authorize?client_id={{clientId}}&response_type={{oauth2_response_type}}&code_challenge={{pkce_code_challenge}}&code_challenge_method=S256&scope={{scope}}&redirect_uri={{redirectUrl}}&state={{$randomUUID}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"oauth2",
+								"authorize"
+							],
+							"query": [
+								{
+									"key": "client_id",
+									"value": "{{clientId}}"
+								},
+								{
+									"key": "response_type",
+									"value": "{{oauth2_response_type}}",
+									"description": "For FinbankAuth removed: id_token, but still returns it"
+								},
+								{
+									"key": "request",
+									"value": "{{dataholderAuthorisationRequestJwt}}",
+									"disabled": true
+								},
+								{
+									"key": "code_challenge",
+									"value": "{{pkce_code_challenge}}"
+								},
+								{
+									"key": "code_challenge_method",
+									"value": "S256"
+								},
+								{
+									"key": "scope",
+									"value": "{{scope}}"
+								},
+								{
+									"key": "redirect_uri",
+									"value": "{{redirectUrl}}"
+								},
+								{
+									"key": "state",
+									"value": "{{$randomUUID}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Resource Token",
+			"item": [
+				{
+					"name": "Get Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var resp = pm.response.json()",
+									"if( pm.response.to.have.status(200)){",
+									"    pm.environment.set(\"accessToken\", resp.access_token)",
+									"    pm.environment.set(\"authorize_token\", resp.access_token)",
+									"    pm.environment.set(\"refreshToken\", resp.refresh_token)",
+									"    pm.environment.set(\"consentId\", resp.grant_id)",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Based onm: https://faun.pub/auto-generating-jwt-tokens-with-postman-2b6dd4e29897",
+									"",
+									"eval( pm.globals.get('pmlib_code') )",
+									"var uuid = require('uuid')",
+									"",
+									"",
+									"const jwtSecret = pm.environment.get('drJwtSecret') || ''",
+									"const dataholderClientId = pm.variables.replaceIn(\"{{clientId}}\") || ''",
+									"const dataholderIssuer = pm.variables.replaceIn(\"{{dataholderIssuer}}\") || ''",
+									"// Set headers for JWT",
+									"var header = {",
+									"\t'typ': 'JWT',",
+									"\t'alg': 'PS256'",
+									"};",
+									"",
+									"// Prepare timestamp in seconds",
+									"var currentTimestamp = Math.floor(Date.now() / 1000)",
+									"",
+									"console.log(\"ClientID: \", dataholderClientId)",
+									"var payload = {",
+									"\t'iss': dataholderClientId,",
+									"\t'sub': dataholderClientId,",
+									"\t'iat': currentTimestamp,",
+									"\t'exp': currentTimestamp + 3000, // expiry time is 30 seconds from time of creation",
+									"\t\"aud\": dataholderIssuer,",
+									"\t\"jti\": uuid.v4()",
+									"}",
+									" ",
+									"const signedToken = pmlib.jwtSign(jwtSecret,payload, header, 3600, 'PS256')",
+									"",
+									"pm.environment.set('dataholderRATAssertionJwt', signedToken)",
+									"console.log('Signed and encoded JWT', signedToken)"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "authorization_code",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "{{clientId}}",
+									"type": "text"
+								},
+								{
+									"key": "redirect_uri",
+									"value": "{{redirectUrl}}",
+									"type": "text"
+								},
+								{
+									"key": "code",
+									"value": "XSyiHAB1Q8QTulcJVhpe5pQqaPvnR9K-tJURygHRXO6qiP8jbYVQZNpUPvbUvt12YNUXzaM6R0XChGhlaRp6Sie5PwWU4gXDg-Idd11eNOefVMxydja6SMKSSHaPYPaS",
+									"type": "text"
+								},
+								{
+									"key": "code_verifier",
+									"value": "{{pkce_code_verifier}}",
+									"type": "text"
+								},
+								{
+									"key": "client_assertion",
+									"value": "{{dataholderRATAssertionJwt}}",
+									"type": "text"
+								},
+								{
+									"key": "client_assertion_type",
+									"value": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{host}}/oauth2/token",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"oauth2",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var resp = pm.response.json()",
+									"if( pm.response.to.have.status(200)){",
+									"    pm.environment.set(\"accessToken\", resp.access_token)",
+									"    pm.environment.set(\"authorize_token\", resp.access_token)",
+									"    pm.environment.set(\"refreshToken\", resp.refresh_token)",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Based onm: https://faun.pub/auto-generating-jwt-tokens-with-postman-2b6dd4e29897",
+									"",
+									"eval( pm.globals.get('pmlib_code') )",
+									"var uuid = require('uuid')",
+									"",
+									"",
+									"const jwtSecret = pm.environment.get('drJwtSecret') || ''",
+									"const dataholderClientId = pm.variables.replaceIn(\"{{clientId}}\") || ''",
+									"const dataholderIssuer = pm.variables.replaceIn(\"{{dataholderIssuer}}\") || ''",
+									"// Set headers for JWT",
+									"var header = {",
+									"\t'typ': 'JWT',",
+									"\t'alg': 'PS256'",
+									"};",
+									"",
+									"// Prepare timestamp in seconds",
+									"var currentTimestamp = Math.floor(Date.now() / 1000)",
+									"",
+									"console.log(\"ClientID: \", dataholderClientId)",
+									"var payload = {",
+									"\t'iss': dataholderClientId,",
+									"\t'sub': dataholderClientId,",
+									"\t'iat': currentTimestamp,",
+									"\t'exp': currentTimestamp + 3000, // expiry time is 30 seconds from time of creation",
+									"\t\"aud\": dataholderIssuer,",
+									"\t\"jti\": uuid.v4()",
+									"}",
+									" ",
+									"const signedToken = pmlib.jwtSign(jwtSecret,payload, header, 3600, 'PS256')",
+									"",
+									"pm.environment.set('dataholderRATAssertionJwt', signedToken)",
+									"console.log('Signed and encoded JWT', signedToken)"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "refresh_token",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "{{clientId}}",
+									"type": "text"
+								},
+								{
+									"key": "redirect_uri",
+									"value": "{{redirectUrl}}",
+									"type": "text"
+								},
+								{
+									"key": "refresh_token",
+									"value": "{{refreshToken}}",
+									"type": "text"
+								},
+								{
+									"key": "client_assertion",
+									"value": "{{dataholderRATAssertionJwt}}",
+									"type": "text"
+								},
+								{
+									"key": "client_assertion_type",
+									"value": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{host}}/oauth2/token",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"oauth2",
+								"token"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Token Introspection",
+			"item": [
+				{
+					"name": "Introspection - AccessToken",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Based onm: https://faun.pub/auto-generating-jwt-tokens-with-postman-2b6dd4e29897",
+									"",
+									"eval( pm.globals.get('pmlib_code') )",
+									"var uuid = require('uuid')",
+									"",
+									"",
+									"const jwtSecret = pm.environment.get('drJwtSecret') || ''",
+									"const dataholderClientId = pm.variables.replaceIn(\"{{clientId}}\") || ''",
+									"const dataholderIssuer = pm.variables.replaceIn(\"{{dataholderIssuer}}\") || ''",
+									"// Set headers for JWT",
+									"var header = {",
+									"\t'typ': 'JWT',",
+									"\t'alg': 'PS256'",
+									"};",
+									"",
+									"// Prepare timestamp in seconds",
+									"var currentTimestamp = Math.floor(Date.now() / 1000)",
+									"",
+									"console.log(\"ClientID: \", dataholderClientId)",
+									"var payload = {",
+									"\t'iss': dataholderClientId,",
+									"\t'sub': dataholderClientId,",
+									"\t'iat': currentTimestamp,",
+									"\t'exp': currentTimestamp + 3000, // expiry time is 30 seconds from time of creation",
+									"\t\"aud\": dataholderIssuer,",
+									"\t\"jti\": uuid.v4()",
+									"}",
+									" ",
+									"const signedToken = pmlib.jwtSign(jwtSecret,payload, header, 3600, 'PS256')",
+									"",
+									"pm.environment.set('dataholderATAssertionJwt', signedToken)",
+									"console.log('Signed and encoded JWT', signedToken)"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "text"
+								},
+								{
+									"key": "token_type_hint",
+									"value": "access_token",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "{{clientId}}",
+									"type": "text"
+								},
+								{
+									"key": "client_assertion",
+									"value": "{{dataholderATAssertionJwt}}",
+									"type": "text"
+								},
+								{
+									"key": "client_assertion_type",
+									"value": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{host}}/oauth2/introspect",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"oauth2",
+								"introspect"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Introspection - RefreshToken",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Based onm: https://faun.pub/auto-generating-jwt-tokens-with-postman-2b6dd4e29897",
+									"",
+									"eval( pm.globals.get('pmlib_code') )",
+									"var uuid = require('uuid')",
+									"",
+									"",
+									"const jwtSecret = pm.environment.get('drJwtSecret') || ''",
+									"const dataholderClientId = pm.variables.replaceIn(\"{{clientId}}\") || ''",
+									"const dataholderIssuer = pm.variables.replaceIn(\"{{dataholderIssuer}}\") || ''",
+									"// Set headers for JWT",
+									"var header = {",
+									"\t'typ': 'JWT',",
+									"\t'alg': 'PS256'",
+									"};",
+									"",
+									"// Prepare timestamp in seconds",
+									"var currentTimestamp = Math.floor(Date.now() / 1000)",
+									"",
+									"console.log(\"ClientID: \", dataholderClientId)",
+									"var payload = {",
+									"\t'iss': dataholderClientId,",
+									"\t'sub': dataholderClientId,",
+									"\t'iat': currentTimestamp,",
+									"\t'exp': currentTimestamp + 3000, // expiry time is 30 seconds from time of creation",
+									"\t\"aud\": dataholderIssuer,",
+									"\t\"jti\": uuid.v4()",
+									"}",
+									" ",
+									"const signedToken = pmlib.jwtSign(jwtSecret,payload, header, 3600, 'PS256')",
+									"",
+									"pm.environment.set('dataholderATAssertionJwt', signedToken)",
+									"console.log('Signed and encoded JWT', signedToken)"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "token",
+									"value": "{{refreshToken}}",
+									"type": "text"
+								},
+								{
+									"key": "token_type_hint",
+									"value": "refresh_token",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "{{clientId}}",
+									"type": "text"
+								},
+								{
+									"key": "client_assertion",
+									"value": "{{dataholderATAssertionJwt}}",
+									"type": "text"
+								},
+								{
+									"key": "client_assertion_type",
+									"value": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{host}}/oauth2/introspect",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"oauth2",
+								"introspect"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Data Resource APIs",
+			"item": [
+				{
+					"name": "Checking Accounts",
+					"item": [
+						{
+							"name": "Get Account Details",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{authorize_token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{resource_host}}/fdx/v6/accounts/{{deposit_acc_1}}",
+									"host": [
+										"{{resource_host}}"
+									],
+									"path": [
+										"fdx",
+										"v6",
+										"accounts",
+										"{{deposit_acc_1}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Transactions",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{authorize_token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{resource_host}}/fdx/v6/accounts/{{deposit_acc_1}}/transactions",
+									"host": [
+										"{{resource_host}}"
+									],
+									"path": [
+										"fdx",
+										"v6",
+										"accounts",
+										"{{deposit_acc_1}}",
+										"transactions"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Contacts Details",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{authorize_token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{resource_host}}/fdx/v6/accounts/{{deposit_acc_1}}/contact",
+									"host": [
+										"{{resource_host}}"
+									],
+									"path": [
+										"fdx",
+										"v6",
+										"accounts",
+										"{{deposit_acc_1}}",
+										"contact"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Payment Networks Details",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{authorize_token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{resource_host}}/fdx/v6/accounts/{{deposit_acc_1}}/payment-networks",
+									"host": [
+										"{{resource_host}}"
+									],
+									"path": [
+										"fdx",
+										"v6",
+										"accounts",
+										"{{deposit_acc_1}}",
+										"payment-networks"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Loan Accounts",
+					"item": [
+						{
+							"name": "Get Account Details",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{authorize_token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{resource_host}}/fdx/v6/accounts/{{loan_acc_1}}",
+									"host": [
+										"{{resource_host}}"
+									],
+									"path": [
+										"fdx",
+										"v6",
+										"accounts",
+										"{{loan_acc_1}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Transactions",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{authorize_token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{resource_host}}/fdx/v6/accounts/{{loan_acc_1}}/transactions",
+									"host": [
+										"{{resource_host}}"
+									],
+									"path": [
+										"fdx",
+										"v6",
+										"accounts",
+										"{{loan_acc_1}}",
+										"transactions"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Contact Details",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{authorize_token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{resource_host}}/fdx/v6/accounts/{{loan_acc_1}}/contact",
+									"host": [
+										"{{resource_host}}"
+									],
+									"path": [
+										"fdx",
+										"v6",
+										"accounts",
+										"{{loan_acc_1}}",
+										"contact"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Payment Networks Details",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{authorize_token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{resource_host}}/fdx/v6/accounts/{{loan_acc_1}}/payment-networks",
+									"host": [
+										"{{resource_host}}"
+									],
+									"path": [
+										"fdx",
+										"v6",
+										"accounts",
+										"{{loan_acc_1}}",
+										"payment-networks"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Investment Accounts",
+					"item": [
+						{
+							"name": "Get Account Details",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{authorize_token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{resource_host}}/fdx/v6/accounts/{{investment_acc_1}}",
+									"host": [
+										"{{resource_host}}"
+									],
+									"path": [
+										"fdx",
+										"v6",
+										"accounts",
+										"{{investment_acc_1}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Transactions",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{authorize_token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{resource_host}}/fdx/v6/accounts/{{investment_acc_1}}/transactions",
+									"host": [
+										"{{resource_host}}"
+									],
+									"path": [
+										"fdx",
+										"v6",
+										"accounts",
+										"{{investment_acc_1}}",
+										"transactions"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Contact Details",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{authorize_token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{resource_host}}/fdx/v6/accounts/{{investment_acc_1}}/contact",
+									"host": [
+										"{{resource_host}}"
+									],
+									"path": [
+										"fdx",
+										"v6",
+										"accounts",
+										"{{investment_acc_1}}",
+										"contact"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "LineOfCreditAccounts",
+					"item": [
+						{
+							"name": "Get Account Details",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{authorize_token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{resource_host}}/fdx/v6/accounts/{{loc_acc_1}}",
+									"host": [
+										"{{resource_host}}"
+									],
+									"path": [
+										"fdx",
+										"v6",
+										"accounts",
+										"{{loc_acc_1}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Transactions",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{authorize_token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{resource_host}}/fdx/v6/accounts/{{loc_acc_1}}/transactions",
+									"host": [
+										"{{resource_host}}"
+									],
+									"path": [
+										"fdx",
+										"v6",
+										"accounts",
+										"{{loc_acc_1}}",
+										"transactions"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Contact Details",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{authorize_token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{resource_host}}/fdx/v6/accounts/{{loc_acc_1}}/contact",
+									"host": [
+										"{{resource_host}}"
+									],
+									"path": [
+										"fdx",
+										"v6",
+										"accounts",
+										"{{loc_acc_1}}",
+										"contact"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Payment Networks Details",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{authorize_token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{resource_host}}/fdx/v6/accounts/{{loc_acc_1}}/payment-networks",
+									"host": [
+										"{{resource_host}}"
+									],
+									"path": [
+										"fdx",
+										"v6",
+										"accounts",
+										"{{loc_acc_1}}",
+										"payment-networks"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Statements",
+					"item": [
+						{
+							"name": "Get statements",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJraWQiOiI5OWJjMzNlZS1hMDRkLTRhODktOGFlMC01ZGViZDIxNDVhYWIiLCJ0eXAiOiJhdCtqd3QiLCJhbGciOiJQUzI1NiJ9.eyJzdWIiOiJmZHh1c2VyIiwiYXVkIjoiZGgtZmR4LWNsaWVudC1yZWdpc3RyYXItMiIsIm5iZiI6MTcxODM2NDUzMiwiYWNjb3VudF9pZCI6WyIxMDAwMSIsIjIwMDAxIiwiMzc0NjI3MiJdLCJzY29wZSI6WyJmZHg6dHJhbnNhY3Rpb25zOnJlYWQiLCJmZHg6YWNjb3VudGJhc2ljOnJlYWQiLCJvcGVuaWQiLCJmZHg6Y3VzdG9tZXJwZXJzb25hbDpyZWFkIiwiZmR4OmFjY291bnRkZXRhaWxlZDpyZWFkIiwiZmR4OmludmVzdG1lbnRzOnJlYWQiLCJmZHg6cGF5bWVudHN1cHBvcnQ6cmVhZCIsImZkeDphY2NvdW50cGF5bWVudHM6cmVhZCIsImZkeDpiaWxsczpyZWFkIiwiZmR4OmltYWdlczpyZWFkIiwiZmR4OnJld2FyZHM6cmVhZCIsImZkeDp0YXg6cmVhZCIsImZkeDpzdGF0ZW1lbnRzOnJlYWQiLCJmZHg6Y3VzdG9tZXJjb250YWN0OnJlYWQiXSwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwIiwiZXhwIjoxNzE4MzY0ODMyLCJpYXQiOjE3MTgzNjQ1MzIsImp0aSI6ImFhY2Y1MzI5LTU0YTMtNDc1MS1hYWUzLWI5NDRkOGRjNmVjZSIsImZkeENvbnNlbnRJZCI6IjZjZjVhM2Y1LTIyYTktNGYzYy05MDQxLTBjZmM4MjE5ZTk0YSIsInNoYXJpbmdfZXhwaXJlc19hdCI6MTc0OTkwMDUwOH0.g0bobuW_FduHBGf6vQlAn9gejTUdQlu-up_gxZD5Ry8n1CV6hQkzOBCMqFucYLRawlRFaX-sAChaZKNaq_pBbjpA85orj82s-yL1UXTWlMFFX-PsHmkR8zd56rex0ZPaFVt5QIBDg1Dtb5W3n6aVEMq3yX4a441_ZbKzD8MZ89Bd5MrbWoe5eX74McPEJuAN7cOOb1A3-Wdtk_G_ZGQ3LLh2u0u7A8KaqYyNbbLlDXaFHNPVDP6jJEM67rQuEYEQ7C0M9qktOVMAGSBTdYsITpJWDwq4F5hIdonzAWGzEFeAaj0N6LoFMXXo1KXQVrbhH_fkGTNDwaeVUVnHIPEDrQ"
+									},
+									{
+										"key": "Cookie",
+										"value": "JSESSIONID=D4A027FDA12BE6EEAA09215B17FFC048"
+									}
+								],
+								"url": {
+									"raw": "{{resource_host}}/fdx/v6/accounts/10001/statements",
+									"host": [
+										"{{resource_host}}"
+									],
+									"path": [
+										"fdx",
+										"v6",
+										"accounts",
+										"10001",
+										"statements"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get statement by id",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJraWQiOiI5OWJjMzNlZS1hMDRkLTRhODktOGFlMC01ZGViZDIxNDVhYWIiLCJ0eXAiOiJhdCtqd3QiLCJhbGciOiJQUzI1NiJ9.eyJzdWIiOiJmZHh1c2VyIiwiYXVkIjoiZGgtZmR4LWNsaWVudC1yZWdpc3RyYXItMiIsIm5iZiI6MTcxODM2NDUzMiwiYWNjb3VudF9pZCI6WyIxMDAwMSIsIjIwMDAxIiwiMzc0NjI3MiJdLCJzY29wZSI6WyJmZHg6dHJhbnNhY3Rpb25zOnJlYWQiLCJmZHg6YWNjb3VudGJhc2ljOnJlYWQiLCJvcGVuaWQiLCJmZHg6Y3VzdG9tZXJwZXJzb25hbDpyZWFkIiwiZmR4OmFjY291bnRkZXRhaWxlZDpyZWFkIiwiZmR4OmludmVzdG1lbnRzOnJlYWQiLCJmZHg6cGF5bWVudHN1cHBvcnQ6cmVhZCIsImZkeDphY2NvdW50cGF5bWVudHM6cmVhZCIsImZkeDpiaWxsczpyZWFkIiwiZmR4OmltYWdlczpyZWFkIiwiZmR4OnJld2FyZHM6cmVhZCIsImZkeDp0YXg6cmVhZCIsImZkeDpzdGF0ZW1lbnRzOnJlYWQiLCJmZHg6Y3VzdG9tZXJjb250YWN0OnJlYWQiXSwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwIiwiZXhwIjoxNzE4MzY0ODMyLCJpYXQiOjE3MTgzNjQ1MzIsImp0aSI6ImFhY2Y1MzI5LTU0YTMtNDc1MS1hYWUzLWI5NDRkOGRjNmVjZSIsImZkeENvbnNlbnRJZCI6IjZjZjVhM2Y1LTIyYTktNGYzYy05MDQxLTBjZmM4MjE5ZTk0YSIsInNoYXJpbmdfZXhwaXJlc19hdCI6MTc0OTkwMDUwOH0.g0bobuW_FduHBGf6vQlAn9gejTUdQlu-up_gxZD5Ry8n1CV6hQkzOBCMqFucYLRawlRFaX-sAChaZKNaq_pBbjpA85orj82s-yL1UXTWlMFFX-PsHmkR8zd56rex0ZPaFVt5QIBDg1Dtb5W3n6aVEMq3yX4a441_ZbKzD8MZ89Bd5MrbWoe5eX74McPEJuAN7cOOb1A3-Wdtk_G_ZGQ3LLh2u0u7A8KaqYyNbbLlDXaFHNPVDP6jJEM67rQuEYEQ7C0M9qktOVMAGSBTdYsITpJWDwq4F5hIdonzAWGzEFeAaj0N6LoFMXXo1KXQVrbhH_fkGTNDwaeVUVnHIPEDrQ"
+									},
+									{
+										"key": "Accept",
+										"value": "application/pdf"
+									},
+									{
+										"key": "Cookie",
+										"value": "JSESSIONID=D4A027FDA12BE6EEAA09215B17FFC048"
+									}
+								],
+								"url": {
+									"raw": "{{resource_host}}/fdx/v6/accounts/10001/statements/40004",
+									"host": [
+										"{{resource_host}}"
+									],
+									"path": [
+										"fdx",
+										"v6",
+										"accounts",
+										"10001",
+										"statements",
+										"40004"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "All Accounts List",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authorize_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{resource_host}}/fdx/v6/accounts",
+							"host": [
+								"{{resource_host}}"
+							],
+							"path": [
+								"fdx",
+								"v6",
+								"accounts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Accounts List By UserId",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{consent_auth_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{resource_host}}/consent/accounts?userId={{user_1}}",
+							"host": [
+								"{{resource_host}}"
+							],
+							"path": [
+								"consent",
+								"accounts"
+							],
+							"query": [
+								{
+									"key": "userId",
+									"value": "{{user_1}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register Consent",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{consent_auth_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"accountIds\" : [10001],\r\n    \"userId\": \"fdxuser\",\r\n    \"consentShareDurationSeconds\": 600\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://{{resource_host}}/consent",
+							"protocol": "http",
+							"host": [
+								"{{resource_host}}"
+							],
+							"path": [
+								"consent"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Consent",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{consent_auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"accountIds\" : [20001],\r\n    \"userId\": \"fdxuser\",\r\n    \"consentShareDurationSeconds\": 600\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{resource_host}}/consent/c342efa2-ada6-4b98-b73b-57f708d7a63f",
+							"host": [
+								"{{resource_host}}"
+							],
+							"path": [
+								"consent",
+								"c342efa2-ada6-4b98-b73b-57f708d7a63f"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Consent",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{consent_auth_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{resource_host}}/consent/c342efa2-ada6-4b98-b73b-57f708d7a63f",
+							"host": [
+								"{{resource_host}}"
+							],
+							"path": [
+								"consent",
+								"c342efa2-ada6-4b98-b73b-57f708d7a63f"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User APIs",
+			"item": [
+				{
+					"name": "SaveUser",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{consent_auth_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"userId\":\"fdxuser1\",\r\n    \"password\":\"password\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{resource_host}}/user",
+							"host": [
+								"{{resource_host}}"
+							],
+							"path": [
+								"user"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{consent_auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{resource_host}}/user/fdxuser",
+							"host": [
+								"{{resource_host}}"
+							],
+							"path": [
+								"user",
+								"fdxuser"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Consent",
+			"item": [
+				{
+					"name": "get consent",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{host}}/fdx/v6/consents/{{consentId}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"fdx",
+								"v6",
+								"consents",
+								"{{consentId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "revoke consent",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{host}}/fdx/v6/consents/{{consentId}}/revocation",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"fdx",
+								"v6",
+								"consents",
+								"{{consentId}}",
+								"revocation"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Upload Data",
+			"item": [
+				{
+					"name": "Add accounts",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\n    {\n        \"accountId\": \"10002\",\n        \"accountCategory\": \"DEPOSIT_ACCOUNT\",\n        \"accountType\": \"CHECKING\",\n        \"displayName\": \"******3223\",\n        \"status\": \"OPEN\",\n        \"productName\": \"Cash Management\",\n        \"currency\": {\n            \"currencyRate\": null,\n            \"currencyCode\": \"USD\",\n            \"originalCurrencyCode\": \"USD\"\n        },\n        \"interestYtd\": 14.15,\n        \"maturityDate\": \"2020-11-09T00:00:00.000-0500\",\n        \"annualPercentageYield\": 0.45,\n        \"description\": \"My Checking Acc XXXX3223\",\n        \"nickname\": \"My Checking Acc XXXX3223\",\n        \"lineOfBusiness\": \"RETAIL\",\n        \"accountNumber\": \"7000003223\",\n        \"accountNumberDisplay\": \"CHECKING\",\n        \"routingTransitNumber\": \"256074974\",\n        \"balanceType\": \"ASSET\",\n        \"lastActivityDate\": \"2020-11-09T00:00:00.000-0500\",\n        \"transactionsIncluded\": false,\n        \"balanceAsOf\": \"2020-12-07T01:06:15.649-0500\",\n        \"currentBalance\": 4984.46,\n        \"availableBalance\": 4984.46,\n        \"openingDayBalance\": 500,\n        \"fiAttributes\": [\n            {\n                \"name\": \"interestPaidLastYear\",\n                \"value\": \"14.08\"\n            },\n            {\n                \"name\": \"interestPayoutFrequency\",\n                \"value\": \"Annually (And At Maturity)\"\n            }\n        ]\n    }\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{resource_host}}/upload/addAccount?accountCategory=DEPOSIT_ACCOUNT&userId=fdxuser1",
+							"host": [
+								"{{resource_host}}"
+							],
+							"path": [
+								"upload",
+								"addAccount"
+							],
+							"query": [
+								{
+									"key": "accountCategory",
+									"value": "DEPOSIT_ACCOUNT"
+								},
+								{
+									"key": "userId",
+									"value": "fdxuser1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Transactions",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\n    {\n        \"accountId\": \"10002\",\n        \"accountCategory\": \"DEPOSIT_ACCOUNT\",\n        \"transactionId\": \"12455\",\n        \"postedTimestamp\": \"2019-07-31T12:00:00.000Z\",\n        \"transactionTimestamp\": \"2019-07-31T12:00:00.000Z\",\n        \"description\": \"INTEREST PAYMENT\",\n        \"status\": \"POSTED\",\n        \"amount\": 0.01,\n        \"transactionType\": \"POSCREDIT\"\n    },\n    {\n        \"accountId\": \"10002\",\n        \"accountCategory\": \"DEPOSIT_ACCOUNT\",\n        \"transactionId\": \"45322\",\n        \"postedTimestamp\": \"2019-02-28T12:00:00.000Z\",\n        \"transactionTimestamp\": \"2019-02-28T12:00:00.000Z\",\n        \"description\": \"INTEREST PAYMENT\",\n        \"status\": \"POSTED\",\n        \"amount\": 0.03,\n        \"transactionType\": \"POSCREDIT\"\n    },\n    {\n        \"accountId\": \"10002\",\n        \"accountCategory\": \"DEPOSIT_ACCOUNT\",\n        \"transactionId\": \"4322777\",\n        \"postedTimestamp\": \"2019-02-26T12:00:00.000Z\",\n        \"transactionTimestamp\": \"2019-02-26T12:00:00.000Z\",\n        \"description\": \"ALLY BANK TRANSFER WEB ID: 3770527921\",\n        \"status\": \"POSTED\",\n        \"amount\": -300,\n        \"transactionType\": \"POSDEBIT\"\n    },\n    {\n        \"accountId\": \"10002\",\n        \"accountCategory\": \"DEPOSIT_ACCOUNT\",\n        \"transactionId\": \"5705141948\",\n        \"postedTimestamp\": \"2019-02-26T12:00:00.000Z\",\n        \"transactionTimestamp\": \"2019-02-26T12:00:00.000Z\",\n        \"description\": \"VENMO CASHOUT\",\n        \"debitCreditMemo\": \"CREDIT\",\n        \"status\": \"POSTED\",\n        \"amount\": 101.72,\n        \"transactionType\": \"POSCREDIT\",\n        \"checkNumber\": 45400222,\n        \"payee\": \"Test User\"\n    }\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{resource_host}}/upload/addTransactions",
+							"host": [
+								"{{resource_host}}"
+							],
+							"path": [
+								"upload",
+								"addTransactions"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
