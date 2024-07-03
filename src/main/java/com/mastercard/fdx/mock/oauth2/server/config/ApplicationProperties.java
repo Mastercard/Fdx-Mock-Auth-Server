@@ -83,6 +83,6 @@ public class ApplicationProperties {
 	private String authServerJwksUriPath;
 
 	public String getLocalServerBaseUri() {
-		return "http://localhost:" + getServerPort();
+		return "https://localhost:" + getServerPort();
 	}
 }

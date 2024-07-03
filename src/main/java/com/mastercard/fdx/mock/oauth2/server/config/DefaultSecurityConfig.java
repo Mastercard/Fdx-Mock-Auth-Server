@@ -1,67 +1,74 @@
 package com.mastercard.fdx.mock.oauth2.server.config;
 
-import static com.mastercard.fdx.mock.oauth2.server.common.ApplicationConstant.DEFAULT_TOKEN_REVOCATION_ENDPOINT_URI;
-import static com.mastercard.fdx.mock.oauth2.server.common.ApplicationConstant.OAUTH2_INTROSPECT_URI;
-import static com.mastercard.fdx.mock.oauth2.server.common.ApplicationConstant.OAUTH2_PAR_URI;
-import static org.springframework.security.config.Customizer.withDefaults;
-
+import com.mastercard.fdx.mock.oauth2.server.security.user.FdxUserDetailsManager;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
-
-import com.mastercard.fdx.mock.oauth2.server.security.user.FdxUserDetailsManager;
-
-import lombok.extern.slf4j.Slf4j;
 
 @Configuration
 @EnableWebSecurity
 @Slf4j
 public class DefaultSecurityConfig {
 
-    @Bean
-    SecurityFilterChain localSecurityFilterChain(HttpSecurity http) throws Exception {
-        allowH2(http); //Since, using H2 as database.
-        applySecurity(http);
+    @Bean(name = "NonMTLSFilterChain")
+    SecurityFilterChain publicApiSecurityFilterChain(HttpSecurity http) throws Exception {
+        http.authorizeRequests()
+                .requestMatchers("/h2/**","/h2-console/**", "/health", "/startupStatus", "/shutdown",
+                        "/callback", "/callback/requests",
+                        "/error", "/favicon.ico",
+                        "/swagger-ui/index.html", "/v3/api-docs","/error", "/favicon.ico",
+                        "/.well-known/openid-configuration", "/oauth2/jwks", "/v1/browser-callback"
+                ,"/oauth2/authorize","/consent")
+                .permitAll();
+        setHttpHeader(http);
         return http.build();
     }
 
-    private static void applySecurity(HttpSecurity http) throws Exception {
+    @Bean(name = "CustomMTLSFilterChain")
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    SecurityFilterChain privateApiSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .authorizeRequests()
+                .requestMatchers("/fdx/v6/**", "/oauth2/token", "/oauth2/par", "/oauth2/introspect")
+                .authenticated().and()
+                .csrf(csrf -> csrf.disable())
+                .x509()
+                .subjectPrincipalRegex("CN=(.*?)(?:,|$)")
+                .userDetailsService(userDetailsService());
 
         http
-            .authorizeRequests(authorizeRequests ->
-                authorizeRequests
-                    .requestMatchers("/health", "/startupStatus", "/shutdown", "/client/register", "/client/register/**", "/swagger-ui/index.html", "/v3/api-docs",
-                            "/callback", "/callback/requests",
-                            OAUTH2_PAR_URI, DEFAULT_TOKEN_REVOCATION_ENDPOINT_URI, "/error", "/favicon.ico",
-                            OAUTH2_INTROSPECT_URI,"/introspect",
-                            "/connect/register","/connect/register/**", "/add-accounts", "/fdx/v6/register", "/fdx/v6/register/**", "/fdx/v6/**").permitAll()
-                    .anyRequest().authenticated())
-                .csrf((csrf) -> csrf.disable())
-                .formLogin(withDefaults())
-                .headers((headers) ->
-                        headers.httpStrictTransportSecurity(hstsConfig -> hstsConfig.maxAgeInSeconds(31536000).includeSubDomains(true)));
+                .authorizeRequests()
+                .requestMatchers("/login") // Apply form login only for form-login-url
+                .authenticated().and()
+                .formLogin()
+                .permitAll()
+                .and().userDetailsService(fdxUsers());
+
+        setHttpHeader(http);
+        return http.build();
     }
 
-    private static void allowH2(HttpSecurity http) throws Exception {
-        http.authorizeRequests()
-                .requestMatchers("/h2/**")
-                .permitAll()
-                .and()
-                .headers()
-                .frameOptions()
-                .sameOrigin();
+    void setHttpHeader(HttpSecurity http) throws Exception {
+        http.headers((headers) ->
+                headers.httpStrictTransportSecurity(hstsConfig -> hstsConfig.maxAgeInSeconds(31536000).includeSubDomains(true))
+                        .frameOptions(frameOptionsConfig -> frameOptionsConfig.sameOrigin()));
     }
 
     @Bean
@@ -71,13 +78,13 @@ public class DefaultSecurityConfig {
 
 
     @Bean
-    @Profile("!local")
+    @Profile("local")
     UserDetailsService fdxUsers() {
         return new FdxUserDetailsManager();
     }
 
     @Bean
-    @Profile("local")
+    @Profile("!local")
     UserDetailsService localUsers() {
         UserDetails user = User.withUsername("fdxuser")
                 .password("password")
@@ -104,4 +111,20 @@ public class DefaultSecurityConfig {
 
     }
 
+    @Bean
+    UserDetailsService userDetailsService() {
+        return new UserDetailsService() {
+            @Override
+            public UserDetails loadUserByUsername(final String username) {
+                log.info("UserDetailsService username={}", username);
+
+                if (username == null || username.length() == 0) {
+                    throw new UsernameNotFoundException(username);
+                }
+
+                User user = new User(username, "", AuthorityUtils.createAuthorityList("ROLE_SSL_USER"));
+                return user;
+            }
+        };
+    }
 }

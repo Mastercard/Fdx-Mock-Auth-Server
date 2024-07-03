@@ -297,8 +297,8 @@ public class AuthorizationServerConfig {
 				.build();
 	}
 
-	@Bean
+	/*@Bean
 	public RestTemplate setupRestTemplate() {
 		return new RestTemplate();
-	}
+	}*/
 }

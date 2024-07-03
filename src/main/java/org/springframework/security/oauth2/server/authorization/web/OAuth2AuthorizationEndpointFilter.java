@@ -343,6 +343,7 @@ public final class OAuth2AuthorizationEndpointFilter extends OncePerRequestFilte
 		if (StringUtils.hasText(authorizationCodeRequestAuthentication.getState())) {
 			uriBuilder.queryParam(OAuth2ParameterNames.STATE, authorizationCodeRequestAuthentication.getState());
 		}
+		response.setHeader("X-Frame-Options", "SAMEORIGIN");
 		this.redirectStrategy.sendRedirect(request, response, uriBuilder.toUriString());
 	}
 

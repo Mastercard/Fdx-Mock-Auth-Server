@@ -2,6 +2,7 @@ package com.mastercard.fdx.mock.oauth2.server.utils;
 
 import com.nimbusds.jose.jwk.source.RemoteJWKSet;
 import com.nimbusds.jose.proc.SecurityContext;
+import com.nimbusds.jose.util.DefaultResourceRetriever;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +21,15 @@ public class RemoteJWKSSetHelper {
     public RemoteJWKSet<SecurityContext> getRemoteJWKSet(String url) {
         try {
             return new RemoteJWKSet<>(new URL(url));
+        } catch (MalformedURLException e) {
+            log.error("Failed to obtain RemoteJWKSet.", e);
+            return null;
+        }
+    }
+
+    public RemoteJWKSet<SecurityContext> getRemoteJWKSet(String url, DefaultResourceRetriever defaultResourceRetriever) {
+        try {
+            return new RemoteJWKSet<>(new URL(url), defaultResourceRetriever);
         } catch (MalformedURLException e) {
             log.error("Failed to obtain RemoteJWKSet.", e);
             return null;
