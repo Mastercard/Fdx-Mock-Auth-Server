@@ -34,7 +34,7 @@ This project helps banks/financial institutions (FIs) implement an auth server i
 9. Now you can access the resource API using this authorization token.
 
 ## Instructions for Building a Docker Image
-1. Uncomment the below properties so that the authentication server can interact with the resource server running on the docker container.
+1. Uncomment the below properties so that the authorization server can interact with the resource server running on the docker container.
    1. mock.res.server.baseurl=http://fdx.mock.resource.server:9090
    2. mock.res.server.userurl=http://fdx.mock.resource.server:9090/user
 2. Build the Docker image using the Docker build command. Run this command from the directory containing the Dockerfile. 
