@@ -27,7 +27,7 @@ import java.util.function.Consumer;
 @AllArgsConstructor
 public class DynamicClientRegistrationService {
 
-    private static final String NEW_CLIENT_REGISTER_URI = "/client/register";
+    private static final String NEW_CLIENT_REGISTER_URI = "/fdx/v6/register/";
     public static final String ERROR_INVALID_CLIENT_METADATA = "invalid_client_metadata";
 
     public static final String ERROR_UNAUTHORIZED = "unauthorized";
@@ -102,12 +102,12 @@ public class DynamicClientRegistrationService {
 
     private static Consumer<Set<String>> getRedirectUrlsMapping(JSONObject dcrRequest) {
         JSONArray redirectUris = dcrRequest.getJSONArray("redirect_uris");
-        Set<String> newScopes = new HashSet<>(redirectUris.length());
-        redirectUris.iterator().forEachRemaining((scopeObj -> newScopes.add(scopeObj.toString())));
+        Set<String> newRedirectUris = new HashSet<>(redirectUris.length());
+        redirectUris.iterator().forEachRemaining((redirectUri -> newRedirectUris.add(redirectUri.toString())));
 
-        return (scopes) -> {
-            scopes.clear();
-            scopes.addAll(newScopes);
+        return (uris) -> {
+            uris.clear();
+            uris.addAll(newRedirectUris);
         };
     }
 
@@ -149,7 +149,7 @@ public class DynamicClientRegistrationService {
         // Alter the Reg Client Uri to reflect the DCRController path.
         var regClientUri = dcrResp.optString(OidcClientMetadataClaimNames.REGISTRATION_CLIENT_URI);
         if (Strings.isNotBlank(regClientUri)) {
-            regClientUri = regClientUri.replace(AuthServerService.CONNECT_REGISTER_URI, NEW_CLIENT_REGISTER_URI);
+            regClientUri = regClientUri.replace("/connect/register?client_id=", NEW_CLIENT_REGISTER_URI);
             dcrResp.put(OidcClientMetadataClaimNames.REGISTRATION_CLIENT_URI, regClientUri);
         }
 

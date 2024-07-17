@@ -91,6 +91,12 @@ public class AuthorizationServerConfig {
 
 	private CustomerConsentRepository customerConsentRepository;
 
+	/**
+	 * Below method has different customisations like callback, oidc well known, jwk timeout, etc.
+	 * @param http
+	 * @return
+	 * @throws Exception
+	 */
 	@Bean
 	@Order(Ordered.HIGHEST_PRECEDENCE)
 	public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -147,7 +153,13 @@ public class AuthorizationServerConfig {
 		return http.formLogin(Customizer.withDefaults()).build();
 	}
 
-
+	/**
+	 * Below method handles the callback response to the clients.
+	 * @param request
+	 * @param response
+	 * @param authentication
+	 * @throws IOException
+	 */
 	private void sendAuthorizationResponse(HttpServletRequest request, HttpServletResponse response,
 			Authentication authentication) throws IOException {
 
@@ -208,6 +220,14 @@ public class AuthorizationServerConfig {
 		return new JdbcPushAuthorizationRequestRepository(jdbcTemplate);
 	}
 
+	/**
+	 * Below configuration generates the Server Jwks using private key and hosts the same at /oauth2/jwks URI
+	 * @return
+	 * @throws JSONException
+	 * @throws JOSEException
+	 * @throws URISyntaxException
+	 * @throws IOException
+	 */
 	@Bean
 	public JWKSource<SecurityContext> jwkSource() throws JSONException, JOSEException, URISyntaxException, IOException {
 		String pk = CommonUtils.getFileContent("dh","/dhpk.txt");
@@ -240,6 +260,10 @@ public class AuthorizationServerConfig {
 		return (jwkSelector, securityContext) -> jwkSelector.select(jwkSet);
 	}*/
 
+	/**
+	 * Below method overrides the bean to set kid to jwt and consent id(fdxConsentId), sharing_expires_at & account_id claims in payload.
+	 * @return
+	 */
 	@Bean
 	public OAuth2TokenCustomizer<JwtEncodingContext> oauth2TokenCustomizer() {
 		return context -> {
@@ -271,6 +295,11 @@ public class AuthorizationServerConfig {
 		}
 	}
 
+	/**
+	 * Below method is overwritten to add support for at+jwt header in jwt.
+	 * @param jwkSource
+	 * @return
+	 */
 	@Bean
 	JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource) {
 		// copied code from OAuth2AuthorizationServerConfiguration.jwtDecoder method and modified to verify type
@@ -289,6 +318,10 @@ public class AuthorizationServerConfig {
 		return new NimbusJwtDecoder(jwtProcessor);
 	}
 
+	/**
+	 * Below method overrides the issuer and jwks endpoint url as per our deployed host.
+	 * @return
+	 */
 	@Bean
 	public AuthorizationServerSettings providerSettings() {
 		return AuthorizationServerSettings.builder()

@@ -19,6 +19,11 @@ public class DynamicClientRegistrationController {
     @Autowired
     DynamicClientRegistrationService dcrService;
 
+    /**
+     * Below method performs the DCR based on the json request body as per fdx.
+     * @param clientRegistrationReq
+     * @return
+     */
     @PostMapping(path = "/register")
     public ResponseEntity<String> register(@RequestBody String clientRegistrationReq) {
         try {
@@ -29,6 +34,13 @@ public class DynamicClientRegistrationController {
         }
     }
 
+    /**
+     * Below method performs the modify client based on the json request body as per fdx. ClientId should be valid.
+     * @param clientModificationReq
+     * @param clientId
+     * @param authorization
+     * @return
+     */
     @PutMapping(path = "/register/{clientId}")
     public ResponseEntity<String> modify(@RequestBody String clientModificationReq,
                                          @PathVariable("clientId") String clientId,
@@ -41,6 +53,12 @@ public class DynamicClientRegistrationController {
         }
     }
 
+    /**
+     * Below method retrieves the client information based on the registered clientId.
+     * @param clientId
+     * @param authorization
+     * @return
+     */
     @GetMapping(path = "/register/{clientId}")
     public ResponseEntity<String> get(@PathVariable("clientId") String clientId, @RequestHeader(AUTHORIZATION) String authorization) {
         try {
@@ -54,7 +72,12 @@ public class DynamicClientRegistrationController {
         }
     }
 
-
+    /**
+     * Below method deletes the client by valid clientId.
+     * @param clientId
+     * @param authorization
+     * @return
+     */
     @DeleteMapping(path = "/register/{clientId}")
     public ResponseEntity<String> delete(@PathVariable("clientId") String clientId, @RequestHeader(AUTHORIZATION) String authorization) {
         try {

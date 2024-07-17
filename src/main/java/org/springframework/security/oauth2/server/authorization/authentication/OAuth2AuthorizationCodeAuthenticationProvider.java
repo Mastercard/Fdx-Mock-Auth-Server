@@ -103,6 +103,13 @@ public final class OAuth2AuthorizationCodeAuthenticationProvider implements Auth
         this.tokenGenerator = tokenGenerator;
     }
 
+    /**
+     * Below method is overwritten from the default Spring AS - OAuth2AuthorizationCodeAuthenticationProvider
+     * for customising accessToken, idToken, refreshToken against grantToken/code exchange.
+     * @param authentication
+     * @return
+     * @throws AuthenticationException
+     */
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         OAuth2AuthorizationCodeAuthenticationToken authorizationCodeAuthentication =

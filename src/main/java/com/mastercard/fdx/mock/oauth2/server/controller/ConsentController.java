@@ -29,6 +29,12 @@ public class ConsentController {
 	@Autowired
 	AuthorizationValidatorService authorizationValidatorService;
 
+	/**
+	 * Retrieves the consent data based on the consentId
+	 * @param consentId
+	 * @param authorization
+	 * @return
+	 */
 	@GetMapping("/{consentId}")
 	public ResponseEntity<ConsentGrant> getConsent(@PathVariable(name = "consentId") String consentId, @RequestHeader("Authorization") String authorization){
 		try {
@@ -39,6 +45,12 @@ public class ConsentController {
 		return new ResponseEntity<>(consentService.getConsent(consentId), HttpStatus.OK);
 	}
 
+	/**
+	 * Revokes the consent based on the consentId
+	 * @param consentId
+	 * @param authorization
+	 * @return
+	 */
 	@PutMapping ("/{consentId}/revocation")
 	public ResponseEntity<ConsentGrant> revokeConsent(@PathVariable(name = "consentId") String consentId, @RequestHeader("Authorization") String authorization){
 		try {

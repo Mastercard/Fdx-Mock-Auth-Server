@@ -51,6 +51,13 @@ public final class OAuth2AuthorizationConsentAuthenticationProvider implements A
 		this.authorizationConsentService = authorizationConsentService;
 	}
 
+	/**
+	 * Below method is overwritten from the default Spring AS - OAuth2AuthorizationConsentAuthenticationProvider
+	 * after successful consent authorization code is generated and stored. For failure, handles the error case.
+	 * @param authentication
+	 * @return
+	 * @throws AuthenticationException
+	 */
 	public Authentication authenticate(Authentication authentication) throws AuthenticationException {
 		if (authentication instanceof OAuth2DeviceAuthorizationConsentAuthenticationToken) {
 			return null;

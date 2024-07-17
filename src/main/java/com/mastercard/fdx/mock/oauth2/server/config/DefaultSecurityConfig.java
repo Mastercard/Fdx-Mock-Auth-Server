@@ -37,6 +37,11 @@ public class DefaultSecurityConfig {
         return http.build();
     }
 
+    /**
+     * Below method configs which endpoints doesn't require formLogin.
+     * @param http
+     * @throws Exception
+     */
     private static void applySecurity(HttpSecurity http) throws Exception {
 
         http
@@ -54,6 +59,11 @@ public class DefaultSecurityConfig {
                         headers.httpStrictTransportSecurity(hstsConfig -> hstsConfig.maxAgeInSeconds(31536000).includeSubDomains(true)));
     }
 
+    /**
+     * Below config allows h2 login after deployment. Since it is mock, access is enabled.
+     * @param http
+     * @throws Exception
+     */
     private static void allowH2(HttpSecurity http) throws Exception {
         http.authorizeRequests()
                 .requestMatchers("/h2/**")

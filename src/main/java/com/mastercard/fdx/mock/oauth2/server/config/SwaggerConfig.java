@@ -18,8 +18,9 @@ import java.util.Collections;
 @Configuration
 @OpenAPIDefinition
 public class SwaggerConfig {
+
 	@Bean
-	OpenAPI springShopOpenAPI() {
+	OpenAPI springOpenAPI() {
 		Server dev = new Server().url("http://localhost:8080").description("Development Environment");
 		return new OpenAPI()
 				.servers(Arrays.asList(dev))

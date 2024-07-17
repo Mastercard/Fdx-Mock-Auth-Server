@@ -22,10 +22,13 @@ public class PushedAuthorizationRequestController {
     @Autowired
     PushedAuthorizationRequestService parService;
 
+    /**
+     * Below API is used to register consent via POST as per RFC-9126
+     * @param body
+     * @return
+     */
     @PostMapping(value = "", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
-    public ResponseEntity<JSONObject> handlePushedAuthorizationRequest(
-            @RequestBody String body
-    ) {
+    public ResponseEntity<JSONObject> handlePushedAuthorizationRequest(@RequestBody String body) {
         PushedAuthorizationResponse res = parService.processPAR(body);
 
         if (res instanceof PushedAuthorizationSuccessResponse)

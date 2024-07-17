@@ -17,6 +17,8 @@ package org.springframework.security.oauth2.server.authorization.oidc.authentica
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.logging.Log;
@@ -35,6 +37,7 @@ import org.springframework.security.oauth2.server.authorization.OAuth2Authorizat
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
+import org.springframework.security.oauth2.server.authorization.oidc.OidcClientMetadataClaimNames;
 import org.springframework.security.oauth2.server.authorization.oidc.OidcClientRegistration;
 import org.springframework.security.oauth2.server.authorization.oidc.converter.RegisteredClientOidcClientRegistrationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.AbstractOAuth2TokenAuthenticationToken;
@@ -61,6 +64,7 @@ public final class OidcClientConfigurationAuthenticationProvider implements Auth
     private final RegisteredClientRepository registeredClientRepository;
     private final OAuth2AuthorizationService authorizationService;
     private Converter<RegisteredClient, OidcClientRegistration> clientRegistrationConverter;
+    private static final String NEW_CLIENT_REGISTER_URI = "/fdx/v6/register/";
 
     /**
      * Constructs an {@code OidcClientConfigurationAuthenticationProvider} using the provided parameters.
@@ -152,6 +156,7 @@ public final class OidcClientConfigurationAuthenticationProvider implements Auth
 
         OidcClientRegistration clientRegistration = this.clientRegistrationConverter.convert(registeredClient);
 
+        clientRegistration = modifyRegisteredClient(clientRegistration);
         if (this.logger.isTraceEnabled()) {
             this.logger.trace("Authenticated client configuration request");
         }
@@ -174,4 +179,20 @@ public final class OidcClientConfigurationAuthenticationProvider implements Auth
         }
     }
 
+    private OidcClientRegistration modifyRegisteredClient(OidcClientRegistration clientRegistration) {
+
+        if(clientRegistration.getClaims().containsKey(OidcClientMetadataClaimNames.REGISTRATION_CLIENT_URI)){
+            String regClientUri = clientRegistration.getClaims().get(OidcClientMetadataClaimNames.REGISTRATION_CLIENT_URI).toString()
+                    .replace("/connect/register?client_id=", NEW_CLIENT_REGISTER_URI);
+            Map<String, Object> claims = new LinkedHashMap();
+            for (Map.Entry<String, Object> entry :  clientRegistration.getClaims().entrySet()) {
+                if (!entry.getKey().equals(OidcClientMetadataClaimNames.REGISTRATION_CLIENT_URI)) {
+                    claims.put(entry.getKey(), entry.getValue());
+                }
+            }
+            claims.put(OidcClientMetadataClaimNames.REGISTRATION_CLIENT_URI, regClientUri);
+            return OidcClientRegistration.withClaims(claims).build();
+        }
+        return clientRegistration;
+    }
 }

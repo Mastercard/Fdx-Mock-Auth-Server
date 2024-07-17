@@ -18,6 +18,11 @@ public class OidcProviderConfigurationCustomizer implements Consumer<OidcProvide
         this.baseSecureUrl = baseSecureUrl;
     }
 
+    /**
+     * Below method provides the customization for well-known configuration.
+     * For e.g., custom register path /fdx/v6/register, adding scopes or specifying algorithms supported.
+     * @param builder the input argument
+     */
     @Override
     public void accept(OidcProviderConfiguration.Builder builder) {
         builder.registrationEndpoint(asUrl(baseSecureUrl, CLIENT_REGISTER_URI))
