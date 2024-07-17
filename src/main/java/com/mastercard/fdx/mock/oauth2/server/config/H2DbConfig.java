@@ -15,8 +15,13 @@ import javax.sql.DataSource;
 @Configuration
 @Slf4j
 @EnableTransactionManagement
-public class H2DbConfig {	
-	
+public class H2DbConfig {
+
+	/**
+	 * Below method configures the h2 database with default sql queries to be executed at startup.
+	 * @param appProps
+	 * @return
+	 */
 	@Bean
 	public DataSource dataSource(ApplicationProperties appProps) {
 		log.info("creating h2 datasource");

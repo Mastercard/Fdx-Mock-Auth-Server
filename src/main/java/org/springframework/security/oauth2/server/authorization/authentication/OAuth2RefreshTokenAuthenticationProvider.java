@@ -85,6 +85,13 @@ public final class OAuth2RefreshTokenAuthenticationProvider implements Authentic
         this.tokenGenerator = tokenGenerator;
     }
 
+    /**
+     * Below method is overwritten from the default Spring AS - OAuth2RefreshTokenAuthenticationProvider
+     * for customising accessToken, idToken, refreshToken against refreshToken request.
+     * @param authentication
+     * @return
+     * @throws AuthenticationException
+     */
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         OAuth2RefreshTokenAuthenticationToken refreshTokenAuthentication =

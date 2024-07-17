@@ -12,6 +12,10 @@ import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+/**
+ * This class is the handler for exceptions occurred in APIs, this will intercept the exceptions,
+ *  add necessary logs and send the response in custom format.
+ */
 @Slf4j
 @ControllerAdvice
 public class MockAuthServerControllerAdvice {

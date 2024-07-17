@@ -40,7 +40,7 @@ public class ConsentService {
 	}
 
 	public void revokeConsent(String consentId, String token){
-		CustomerConsent customerConsent = getCustomerConsent(consentId);
+		getCustomerConsent(consentId);
 		OAuth2Authorization authorization = authorizationService.findByToken(token, OAuth2TokenType.ACCESS_TOKEN);
 		try {
 			authorizationService.remove(authorization);

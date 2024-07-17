@@ -20,6 +20,9 @@ import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
 import java.util.UUID;
 
+/**
+ * Below class generates the public jwk set to be hosted by server.
+ */
 @Slf4j
 public final class Jwks {
 

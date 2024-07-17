@@ -35,6 +35,15 @@ public class AuthorizationValidatorService {
     @Autowired
     private ApplicationProperties appProps;
 
+    /**
+     * Below method validates the jwt authorization token from DCR flow.
+     * @param authorisation
+     * @param clientId
+     * @throws ParseException
+     * @throws BadJOSEException
+     * @throws JOSEException
+     * @throws com.nimbusds.oauth2.sdk.ParseException
+     */
     public void validate(String authorisation, String clientId) throws ParseException, BadJOSEException, JOSEException, com.nimbusds.oauth2.sdk.ParseException {
         BearerAccessToken authToken = BearerAccessToken.parse(authorisation);
 
@@ -51,6 +60,14 @@ public class AuthorizationValidatorService {
         validateJwt(authToken.getValue(), claimsVerifier);
     }
 
+    /**
+     * Below method validates the jwt authorization token for other APIs like Consent, token.
+     * @param authorisation
+     * @throws BadJOSEException
+     * @throws ParseException
+     * @throws JOSEException
+     * @throws com.nimbusds.oauth2.sdk.ParseException
+     */
     public void validateAccessToken(String authorisation)
             throws BadJOSEException, ParseException, JOSEException, com.nimbusds.oauth2.sdk.ParseException {
 

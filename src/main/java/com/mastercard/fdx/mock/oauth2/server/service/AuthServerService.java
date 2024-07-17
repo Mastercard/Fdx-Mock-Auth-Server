@@ -26,7 +26,6 @@ import static com.mastercard.fdx.mock.oauth2.server.common.ApplicationConstant.O
 public class AuthServerService {
 
     public static final String OAUTH2_TOKEN_URI = "/oauth2/token";
-    public static final String OAUTH2_INTROSPECT_URI = "/oauth2/introspect";
     public static final String CLIENT_SCOPE_CREATE = "client.create";
     public static final String AUTHENTICATION_ERROR = "authentication_error";
     public static final String CLIENT_SCOPE_READ = "client.read";
@@ -36,6 +35,12 @@ public class AuthServerService {
     @Autowired
     private ApplicationProperties appProps;
 
+    /**
+     * Below method calls the Spring AS to register client with valid accessToken
+     * @param req
+     * @param accessToken
+     * @return
+     */
     public ResponseEntity<String> registerClient(JSONObject req, String accessToken) {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
@@ -46,6 +51,13 @@ public class AuthServerService {
         return restTemplate.postForEntity(appProps.getLocalServerBaseUri() + CONNECT_REGISTER_URI, request, String.class);
     }
 
+    /**
+     * Below method retrieves the accessToken from Spring AS based on default client id and client secret for internal processing.
+     * @param clientId
+     * @param clientSecret
+     * @return
+     * @throws ErrorResponse
+     */
     public String getAccessToken(String clientId, String clientSecret) throws ErrorResponse {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
@@ -66,6 +78,12 @@ public class AuthServerService {
         return tokenResp.getString(OAuth2TokenType.ACCESS_TOKEN.getValue());
     }
 
+    /**
+     * Below method retrieves the client information from Spring AS based on clientId and valid accessToken.
+     * @param clientId
+     * @param dhDcrAccessToken
+     * @return
+     */
     public ResponseEntity<String> getClient(String clientId, String dhDcrAccessToken) {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();

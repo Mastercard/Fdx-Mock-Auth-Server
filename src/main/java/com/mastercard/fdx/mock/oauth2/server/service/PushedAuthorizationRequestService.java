@@ -45,6 +45,12 @@ public class PushedAuthorizationRequestService {
     @Autowired
     private PushAuthorizationRequestRepository pushAuthorizationRequestRepository;
 
+    /**
+     * Below method validates the Pushed Authorization request, stores the metadata about consent and sends the unique requestUri
+     * This requestUri is then used with /authorize consent url.
+     * @param body
+     * @return
+     */
     public PushedAuthorizationResponse processPAR(String body) {
         try {
             var parReq = parsePAR(body);
@@ -89,6 +95,13 @@ public class PushedAuthorizationRequestService {
                             ApplicationConstant.OAUTH2_PARAM_REQUEST + "=" + requestObj);
     }
 
+    /**
+     * Below method is used to validate the jwt PushedAuthorizationRequest with the client public jwks.
+     * @param parReq
+     * @param clientJwksUri
+     * @throws BadJOSEException
+     * @throws JOSEException
+     */
     private void validateRequestJws(PushedAuthorizationRequest parReq, String clientJwksUri) throws BadJOSEException, JOSEException {
 
         RemoteJWKSet<SecurityContext> keySource = CommonUtils.getRemoteJWKSet(clientJwksUri);

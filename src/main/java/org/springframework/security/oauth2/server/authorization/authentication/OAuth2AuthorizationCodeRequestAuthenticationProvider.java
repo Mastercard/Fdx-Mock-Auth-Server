@@ -93,6 +93,13 @@ public final class OAuth2AuthorizationCodeRequestAuthenticationProvider implemen
         this.authorizationConsentService = authorizationConsentService;
     }
 
+    /**
+     * Below method is overwritten from the default Spring AS - OAuth2AuthorizationCodeRequestAuthenticationProvider
+     * for customising the validations of /oauth2/authorize request like grantType is valid, pkce is required,etc.
+     * @param authentication
+     * @return
+     * @throws AuthenticationException
+     */
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         OAuth2AuthorizationCodeRequestAuthenticationToken authorizationCodeRequestAuthentication =

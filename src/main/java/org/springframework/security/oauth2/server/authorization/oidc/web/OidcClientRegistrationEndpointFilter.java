@@ -49,7 +49,7 @@ public final class OidcClientRegistrationEndpointFilter extends OncePerRequestFi
     private AuthenticationFailureHandler authenticationFailureHandler;
 
     public OidcClientRegistrationEndpointFilter(AuthenticationManager authenticationManager) {
-        this(authenticationManager, "/connect/register");
+        this(authenticationManager, DEFAULT_OIDC_CLIENT_REGISTRATION_ENDPOINT_URI);
     }
 
     public OidcClientRegistrationEndpointFilter(AuthenticationManager authenticationManager, String clientRegistrationEndpointUri) {

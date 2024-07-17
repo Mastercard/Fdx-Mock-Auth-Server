@@ -37,6 +37,15 @@ public class AccountConsentController {
     @Autowired
     AccountConsentService accountConsentService;
 
+    /**
+     * Below API loads the consent related information using requestUri or jwt requestObj. Called by UI.
+     * @param clientId
+     * @param scope
+     * @param state
+     * @param requestUri
+     * @param requestObj
+     * @return
+     */
     @GetMapping("")
     public ModelAndView requestAccountConsent(
             @RequestParam(OAuth2ParameterNames.CLIENT_ID) String clientId,
@@ -50,6 +59,18 @@ public class AccountConsentController {
         return accountConsentService.requestAccountConsent(clientId, scope, state, requestUri, requestObj);
     }
 
+    /**
+     * Below API is used to register consent after the user selects accounts and submits. Called by UI.
+     * @param clientId
+     * @param scopes
+     * @param state
+     * @param accountIds
+     * @param consentShareDurationSeconds
+     * @param prevConsentId
+     * @param cancelConsent
+     * @param cookie
+     * @return
+     */
     @PostMapping(value = "", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
     public ResponseEntity<String> registerAccountConsent(
             @RequestParam("clientId") String clientId,
@@ -83,6 +104,10 @@ public class AccountConsentController {
         }
     }
 
+    /**
+     * Below API is used to retrieve list of accounts associated with User for consent journey. Called by UI.
+     * @return
+     */
     @GetMapping("/accounts")
     public ResponseEntity<String> listAccountsRequiringConsent() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();

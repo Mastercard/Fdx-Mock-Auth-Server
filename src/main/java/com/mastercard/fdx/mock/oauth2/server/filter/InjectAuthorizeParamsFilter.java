@@ -49,6 +49,16 @@ public class InjectAuthorizeParamsFilter extends OncePerRequestFilter {
                 authorizationRequestGetMatcher, clientIdMatcher, requestObjectMatcher);
     }
 
+    /**
+     * This filter is overwritten for /oauth2/authorize authorization page initiated by client.
+     * Here, the request jwt object is parsed and claims are injected to request object.
+     * So, that it can be used at later processing.
+     * @param request
+     * @param response
+     * @param filterChain
+     * @throws ServletException
+     * @throws IOException
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         RequestWrapper req = new RequestWrapper(request);

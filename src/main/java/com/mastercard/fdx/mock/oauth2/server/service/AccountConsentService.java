@@ -155,6 +155,11 @@ public class AccountConsentService {
         return OAuth2AuthorizationRequestUtils.adjustSharingDuration(sharingDuration);
     }
 
+    /**
+     * Below method retrieves the list of accounts based on userId from resource server.
+     * @param userId
+     * @return
+     */
     public ResponseEntity<String> getAccounts(String userId) {
       try {
     	var headers = new HttpHeaders();
@@ -179,6 +184,14 @@ public class AccountConsentService {
       return null;
     }
 
+    /**
+     * Below method registers the consent metadata or updates on resource server.
+     * @param prevConsentId
+     * @param userId
+     * @param accountIds
+     * @param consentShareDurationSeconds
+     * @return
+     */
     public AccountConsentResponse registerConsent(String prevConsentId, String userId, List<String> accountIds, long consentShareDurationSeconds) {
         var req = new JSONObject();
         req.put("consentId", prevConsentId);
