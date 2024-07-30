@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.mastercard.fdx.mock.oauth2.server.utils.RemoteJWKSSetHelper;
+import com.nimbusds.jose.jwk.source.JWKSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -31,12 +33,10 @@ import com.mastercard.fdx.mock.oauth2.server.consent.CustomerConsent;
 import com.mastercard.fdx.mock.oauth2.server.consent.CustomerConsentRepository;
 import com.mastercard.fdx.mock.oauth2.server.par.PushAuthorizationRequestData;
 import com.mastercard.fdx.mock.oauth2.server.par.PushAuthorizationRequestRepository;
-import com.mastercard.fdx.mock.oauth2.server.utils.CommonUtils;
 import com.mastercard.fdx.mock.oauth2.server.utils.OAuth2AuthorizationRequestUtils;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSObject;
-import com.nimbusds.jose.jwk.source.RemoteJWKSet;
 import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jose.proc.JWSVerificationKeySelector;
 import com.nimbusds.jose.proc.SecurityContext;
@@ -73,6 +73,9 @@ public class AccountConsentService {
 
     @Autowired
     private ApplicationProperties appProps;
+
+    @Autowired
+    private RemoteJWKSSetHelper remoteJWKSSetHelper;
 
     public ModelAndView requestAccountConsent(String clientId, String scope, String state, String requestUri, String requestObj) {
         var mav = new ModelAndView("index");
@@ -161,27 +164,27 @@ public class AccountConsentService {
      * @return
      */
     public ResponseEntity<String> getAccounts(String userId) {
-      try {
-    	var headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
-        headers.add(HttpHeaders.AUTHORIZATION, appProps.getResourceServerAuthCode());
+        try {
+            var headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+            headers.add(HttpHeaders.AUTHORIZATION, appProps.getResourceServerAuthCode());
 
-        Map<String, String> params = new HashMap<>();
-        params.put(USER_ID, userId);
+            Map<String, String> params = new HashMap<>();
+            params.put(USER_ID, userId);
 
-        HttpEntity<Void> request = new HttpEntity<>(headers);
-        return restTemplate.exchange(
-                appProps.getMockResServerBaseUrl() + CONSENT_ACCOUNTS_URI,
-                HttpMethod.GET,
-                request,
-                String.class,
-                params);
-      }
-      catch (Exception e) {
-		e.printStackTrace();
-	}
-      return null;
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+            return restTemplate.exchange(
+                    appProps.getMockResServerBaseUrl() + CONSENT_ACCOUNTS_URI,
+                    HttpMethod.GET,
+                    request,
+                    String.class,
+                    params);
+        }
+        catch (Exception e) {
+            log.error(e.getMessage());
+        }
+        return null;
     }
 
     /**
@@ -276,7 +279,7 @@ public class AccountConsentService {
     }
 
     private boolean validateAssertion(String clientAssertion, RegisteredClient client) {
-        RemoteJWKSet<SecurityContext> keySource = CommonUtils.getRemoteJWKSet(client.getClientSettings().getJwkSetUrl());
+        JWKSource<SecurityContext> keySource = remoteJWKSSetHelper.getRemoteJWKSet(client.getClientSettings().getJwkSetUrl());
         JWSVerificationKeySelector<SecurityContext> keySelector = new JWSVerificationKeySelector<>(JWSAlgorithm.PS256, keySource);
         DefaultJWTProcessor<SecurityContext> jwtProcessor = new DefaultJWTProcessor<>();
         jwtProcessor.setJWSKeySelector(keySelector);

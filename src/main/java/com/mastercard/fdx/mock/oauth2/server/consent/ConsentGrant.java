@@ -25,5 +25,5 @@ public class ConsentGrant {
 	private String durationType;
 	private String lookbackPeriod;
 	private String resources;
-	private List parties;
+	private List<Party> parties;
 }

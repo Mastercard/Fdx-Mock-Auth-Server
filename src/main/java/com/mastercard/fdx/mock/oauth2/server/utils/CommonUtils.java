@@ -2,14 +2,10 @@ package com.mastercard.fdx.mock.oauth2.server.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.jwk.source.RemoteJWKSet;
-import com.nimbusds.jose.proc.SecurityContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.FileCopyUtils;
 
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.util.Date;
@@ -27,15 +23,6 @@ public class CommonUtils {
 
 	public static Timestamp fromNow(int millisec) {
 		return new Timestamp(new Date().getTime() + millisec);
-	}
-
-	public static RemoteJWKSet<SecurityContext> getRemoteJWKSet(String url) {
-		try {
-			return new RemoteJWKSet<>(new URL(url));
-		} catch (MalformedURLException e) {
-			log.error("Failed to obtain RemoteJWKSet.", e);
-			return null;
-		}
 	}
 
 	public static String getStringOfStackTrace(StackTraceElement[] stackTrace) {

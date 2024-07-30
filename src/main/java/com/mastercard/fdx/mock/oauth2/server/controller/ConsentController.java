@@ -39,7 +39,7 @@ public class ConsentController {
 	public ResponseEntity<ConsentGrant> getConsent(@PathVariable(name = "consentId") String consentId, @RequestHeader("Authorization") String authorization){
 		try {
 			authorizationValidatorService.validateAccessToken(authorization);
-		} catch (ParseException | BadJOSEException | JOSEException | com.nimbusds.oauth2.sdk.ParseException e) {
+		} catch (ParseException | BadJOSEException | JOSEException e) {
 			throw new SecurityException("Invalid or expired access token");
 		}
 		return new ResponseEntity<>(consentService.getConsent(consentId), HttpStatus.OK);
@@ -55,7 +55,7 @@ public class ConsentController {
 	public ResponseEntity<ConsentGrant> revokeConsent(@PathVariable(name = "consentId") String consentId, @RequestHeader("Authorization") String authorization){
 		try {
 			authorizationValidatorService.validateAccessToken(authorization);
-		} catch (ParseException | BadJOSEException | JOSEException | com.nimbusds.oauth2.sdk.ParseException e) {
+		} catch (ParseException | BadJOSEException | JOSEException e) {
 			throw new SecurityException("Invalid or expired access token");
 		}
 		consentService.revokeConsent(consentId, authorization);

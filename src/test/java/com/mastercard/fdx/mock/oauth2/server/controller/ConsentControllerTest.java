@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -54,4 +55,15 @@ class ConsentControllerTest {
         assertEquals(HttpStatus.NO_CONTENT, res.getStatusCode());
     }
 
+    @Test
+    void testInValidRequest() throws ErrorResponse, BadJOSEException, ParseException, JOSEException {
+        doThrow(ParseException.class).when(authorizationValidatorService).validateAccessToken(anyString());
+        assertThrows(SecurityException.class, () -> consentController.getConsent("BLAH", "Auth"));
+    }
+
+    @Test
+    void testInValidRevokeConsent() throws ErrorResponse, BadJOSEException, ParseException, JOSEException {
+        doThrow(ParseException.class).when(authorizationValidatorService).validateAccessToken(anyString());
+        assertThrows(SecurityException.class, () -> consentController.revokeConsent("BLAH", "Auth"));
+    }
 }

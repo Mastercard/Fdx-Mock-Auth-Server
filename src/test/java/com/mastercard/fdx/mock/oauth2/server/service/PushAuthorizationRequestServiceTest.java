@@ -86,7 +86,7 @@ class PushAuthorizationRequestServiceTest {
         assertTrue(res.toErrorResponse().getErrorObject().getDescription().contains("Invalid Client"));
     }
 
-    //@Test
+    @Test
     void testError_ValidClientId() throws RemoteKeySourceException {
 
         String body = generateValidPARPostData(assertionJwt, parJwt);
@@ -109,7 +109,7 @@ class PushAuthorizationRequestServiceTest {
         assertNotNull(res.toSuccessResponse().toJSONObject().getAsString("expires_in"));
     }
 
-    //@Test
+    @Test
     void testError_ValidClientId_ButNotSignedByClient() throws RemoteKeySourceException {
 
         String body = generateValidPARPostData(assertionJwt, parJwt);

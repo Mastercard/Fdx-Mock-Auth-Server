@@ -51,7 +51,7 @@ public class DynamicClientRegistrationService {
             ResponseEntity<String> resp = authServerService.registerClient(dcrRequest, accessToken);
 
             if (resp.getStatusCode().value() == 201) {
-                resp = makeRegisterSuccessResponse(resp, null);
+                resp = makeRegisterSuccessResponse(resp);
             }
 
             return resp;
@@ -64,11 +64,7 @@ public class DynamicClientRegistrationService {
 
     public ResponseEntity<String> modify(String clientModificationReq, String authorization, String clientId) throws ErrorResponse {
         try {
-            try {
-                authorizationValidatorService.validate(authorization, clientId);
-            } catch (ParseException | BadJOSEException | JOSEException | com.nimbusds.oauth2.sdk.ParseException e) {
-                throw new ErrorResponse(ERROR_UNAUTHORIZED, e.getMessage());
-            }
+            validateAuthorization(authorization, clientId);
 
             var dcrRequest = parsePayload(clientModificationReq);
 
@@ -85,6 +81,14 @@ public class DynamicClientRegistrationService {
         catch (JSONException ex) {
             log.error("Failed to validate Client JWT " , ex);
             throw new ErrorResponse(ERROR_INVALID_CLIENT_METADATA, ex.getLocalizedMessage());
+        }
+    }
+
+    private void validateAuthorization(String authorization, String clientId) throws ErrorResponse {
+        try {
+            authorizationValidatorService.validate(authorization, clientId);
+        } catch (ParseException | BadJOSEException | JOSEException | com.nimbusds.oauth2.sdk.ParseException e) {
+            throw new ErrorResponse(ERROR_UNAUTHORIZED, e.getMessage());
         }
     }
 
@@ -105,7 +109,7 @@ public class DynamicClientRegistrationService {
         Set<String> newRedirectUris = new HashSet<>(redirectUris.length());
         redirectUris.iterator().forEachRemaining((redirectUri -> newRedirectUris.add(redirectUri.toString())));
 
-        return (uris) -> {
+        return uris -> {
             uris.clear();
             uris.addAll(newRedirectUris);
         };
@@ -116,11 +120,7 @@ public class DynamicClientRegistrationService {
     }
 
     public ResponseEntity<String> delete(String clientId, String authorization) throws ErrorResponse {
-        try {
-            authorizationValidatorService.validate(authorization, clientId);
-        } catch (ParseException | BadJOSEException | JOSEException | com.nimbusds.oauth2.sdk.ParseException e) {
-            throw new ErrorResponse(ERROR_UNAUTHORIZED, e.getMessage());
-        }
+        validateAuthorization(authorization, clientId);
 
         String deletedClientId = clientDeletionService.deleteClient(clientId);
 
@@ -143,7 +143,7 @@ public class DynamicClientRegistrationService {
         return new JSONObject(clientRegistrationReq);
     }
 
-    private static ResponseEntity<String> makeRegisterSuccessResponse(ResponseEntity<String> resp, JSONObject ssa) {
+    private static ResponseEntity<String> makeRegisterSuccessResponse(ResponseEntity<String> resp) {
         var dcrResp = new JSONObject(resp.getBody());
 
         // Alter the Reg Client Uri to reflect the DCRController path.

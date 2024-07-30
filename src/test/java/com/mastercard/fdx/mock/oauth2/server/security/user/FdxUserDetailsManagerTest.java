@@ -22,7 +22,7 @@ class FdxUserDetailsManagerTest {
     FdxUserDetailsManager userManager;
 
     @Test
-    void testUserExistValid() {
+    void testLoadUserByUsername() {
         FdxUser expUser = new FdxUser("TESTUSER1", "TESTHASH1");
         when(userService.getUser(anyString())).thenReturn(expUser);
 
@@ -33,9 +33,45 @@ class FdxUserDetailsManagerTest {
     }
 
     @Test
-    void testUserDoesExistValid() {
+    void testLoadUserByUsernameNotFoundException() {
         when(userService.getUser(anyString())).thenReturn(null);
         assertThrows(UsernameNotFoundException.class, () -> userManager.loadUserByUsername("TEST_NON_EXISTING_USER"));
     }
 
+    @Test
+    void testUserExists() {
+        FdxUser expUser = new FdxUser("TESTUSER1", "TESTHASH1");
+        when(userService.getUser(anyString())).thenReturn(expUser);
+
+        boolean user = userManager.userExists(expUser.getUserId());
+        assertTrue(user);
+    }
+
+    @Test
+    void testUserExistsNotFoundException() {
+        when(userService.getUser(anyString())).thenReturn(null);
+        boolean user = userManager.userExists("TEST_NON_EXISTING_USER");
+        assertFalse(user);
+    }
+
+
+    @Test
+    void testCreateUser() {
+        assertThrows(UnsupportedOperationException.class, () -> userManager.createUser(null));
+    }
+
+    @Test
+    void testUpdateUser() {
+        assertThrows(UnsupportedOperationException.class, () -> userManager.updateUser(null));
+    }
+
+    @Test
+    void testDeleteUser() {
+        assertThrows(UnsupportedOperationException.class, () -> userManager.deleteUser(null));
+    }
+
+    @Test
+    void testChangePassword() {
+        assertThrows(UnsupportedOperationException.class, () -> userManager.changePassword(null, null));
+    }
 }
