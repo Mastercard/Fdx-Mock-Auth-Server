@@ -30,6 +30,8 @@ class AccountConsentControllerTest {
     @InjectMocks
     private AccountConsentController accountConsentController;
 
+    private String user = "USER1";
+
     @Test
     void testAnonymousValidation() {
         AnonymousAuthenticationToken token = Mockito.mock(AnonymousAuthenticationToken.class);
@@ -46,7 +48,7 @@ class AccountConsentControllerTest {
     @Test
     void testRegisterAccountConsent() {
         UsernamePasswordAuthenticationToken token = Mockito.mock(UsernamePasswordAuthenticationToken.class);
-        Mockito.when(token.getName()).thenReturn("USER1");
+        Mockito.when(token.getName()).thenReturn(user);
         SecurityContextHolder.getContext().setAuthentication(token);
 
         AccountConsentResponse accConsentRes = new AccountConsentResponse("customerId", "cdrArrangementId", new Timestamp(1));
@@ -67,7 +69,8 @@ class AccountConsentControllerTest {
     @Test
     void testListAccountsRequiringConsent() {
         UsernamePasswordAuthenticationToken token = Mockito.mock(UsernamePasswordAuthenticationToken.class);
-        Mockito.when(token.getName()).thenReturn("USER1");
+        Mockito.when(token.getName()).thenReturn(user);
+        Mockito.when(acs.getAccounts(user)).thenReturn(new ResponseEntity<> ("LOAN_ACCOUNT", HttpStatus.OK));
         SecurityContextHolder.getContext().setAuthentication(token);
 
         ResponseEntity<String> res =  accountConsentController.listAccountsRequiringConsent();

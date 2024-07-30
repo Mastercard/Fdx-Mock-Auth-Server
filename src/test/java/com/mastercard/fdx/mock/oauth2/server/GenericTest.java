@@ -68,7 +68,7 @@ public class GenericTest { // NOSONAR
 						|| methods[index].getParameterTypes()[0] == int.class) {
 					methods[index].invoke(act, 123);
 				} else if (methods[index].getParameterTypes()[0] == URL.class) {
-					methods[index].invoke(act, new URL("https://test.com"));
+					methods[index].invoke(act, new URL("https://finicity.com"));
 				} else if (methods[index].getParameterTypes()[0].getName().endsWith("Enum")
 						|| methods[index].getParameterTypes()[0].getName().endsWith("HttpStatus")
 						|| methods[index].getParameterTypes()[0].getName().endsWith("Status")) {

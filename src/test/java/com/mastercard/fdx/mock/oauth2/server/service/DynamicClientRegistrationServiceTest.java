@@ -3,27 +3,19 @@ package com.mastercard.fdx.mock.oauth2.server.service;
 import com.github.openjson.JSONObject;
 import com.mastercard.fdx.mock.oauth2.server.common.ErrorResponse;
 import com.mastercard.fdx.mock.oauth2.server.config.ApplicationProperties;
-import com.mastercard.fdx.mock.oauth2.server.utils.Jwks;
 import com.mastercard.fdx.mock.oauth2.server.utils.RemoteJWKSSetHelper;
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.jwk.JWK;
-import com.nimbusds.jose.jwk.KeyUse;
-import com.nimbusds.jose.jwk.source.RemoteJWKSet;
-import com.nimbusds.jose.proc.SecurityContext;
+import com.nimbusds.jose.proc.BadJOSEException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.text.ParseException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -131,4 +123,41 @@ class DynamicClientRegistrationServiceTest {
         verify(clientDeletionService).deleteClient("a");
     }
 
+    @Test
+    void testInValidDCMJwtRequest() throws ErrorResponse, JOSEException {
+
+        String createClientRequestPayload = """
+                {
+                "client_name": "11TestName1221",
+                "redirect_uris": ["https://mybankAuthServer.com/callback"],
+                "jwks_uri": "https://www.jsonkeeper.com/b/3FJT",
+                "scope": "client.create client.read",
+                "token_endpoint_auth_method": "private_key_jwt",
+                "token_endpoint_auth_signing_alg": "PS256",
+                "grant_types": [
+                    "client_credentials",
+                    "authorization_code",
+                    "refresh_token"
+                ],
+                "response_types": [
+                    "code"
+                ],
+                "id_token_signed_response_alg": "PS256",
+                "id_token_encrypted_response_alg": "RSA-OAEP",
+                "id_token_encrypted_response_enc": "A256GCM",
+                "request_object_signing_alg": "PS256"
+                }
+                """;
+
+        ErrorResponse ex = assertThrows(ErrorResponse.class, () ->  dcrService.modify(createClientRequestPayload, "", ""));
+        assertEquals(DynamicClientRegistrationService.ERROR_INVALID_CLIENT_METADATA, ex.getError());
+    }
+
+    @Test
+    void testInValidDCM() throws ErrorResponse, JOSEException, BadJOSEException, ParseException,
+			com.nimbusds.oauth2.sdk.ParseException {
+        doThrow(ParseException.class).when(authorizationValidatorService).validate(anyString(), anyString());
+        ErrorResponse ex = assertThrows(ErrorResponse.class, () ->  dcrService.modify("createClientRequestPayload", "", ""));
+        assertEquals(DynamicClientRegistrationService.ERROR_UNAUTHORIZED, ex.getError());
+    }
 }

@@ -6,6 +6,7 @@ import java.util.HashSet;
 
 import com.mastercard.fdx.mock.oauth2.server.config.ApplicationProperties;
 import com.mastercard.fdx.mock.oauth2.server.utils.RemoteJWKSSetHelper;
+import com.nimbusds.jose.jwk.source.JWKSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +14,6 @@ import org.springframework.stereotype.Service;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.jwk.source.RemoteJWKSet;
 import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jose.proc.DefaultJOSEObjectTypeVerifier;
 import com.nimbusds.jose.proc.JWSVerificationKeySelector;
@@ -69,7 +69,7 @@ public class AuthorizationValidatorService {
      * @throws com.nimbusds.oauth2.sdk.ParseException
      */
     public void validateAccessToken(String authorisation)
-            throws BadJOSEException, ParseException, JOSEException, com.nimbusds.oauth2.sdk.ParseException {
+            throws BadJOSEException, ParseException, JOSEException {
 
         JWTClaimsSetVerifier<SecurityContext> claimsVerifier = new DefaultJWTClaimsVerifier<>(
                 new JWTClaimsSet.Builder()
@@ -84,7 +84,7 @@ public class AuthorizationValidatorService {
 
     private void validateJwt(String authToken, JWTClaimsSetVerifier<SecurityContext> claimsVerifier)
             throws ParseException, BadJOSEException, JOSEException {
-        RemoteJWKSet<SecurityContext> keySource = remoteJWKSSetHelper.getRemoteJWKSet(appProps.getAuthServerBaseUrl() + appProps.getAuthServerJwksUriPath());
+        JWKSource<SecurityContext> keySource = remoteJWKSSetHelper.getRemoteJWKSet(appProps.getAuthServerBaseUrl() + appProps.getAuthServerJwksUriPath());
         JWSVerificationKeySelector<SecurityContext> keySelector = new JWSVerificationKeySelector<>(JWSAlgorithm.PS256, keySource);
 
         DefaultJWTProcessor<SecurityContext> jwtProcessor = new DefaultJWTProcessor<>();

@@ -7,13 +7,13 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class Error {
-	private final String error;
+	private final String err;
 	private final String errorDescription;
 
 	@Override
 	public String toString() {
 		var json = new JSONObject();
-		json.put("error", error);
+		json.put("error", err);
 		json.put("error_description", errorDescription);
 		return json.toString();
 	}

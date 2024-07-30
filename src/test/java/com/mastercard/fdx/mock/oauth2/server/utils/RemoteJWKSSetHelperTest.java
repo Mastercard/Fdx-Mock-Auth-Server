@@ -1,6 +1,6 @@
 package com.mastercard.fdx.mock.oauth2.server.utils;
 
-import com.nimbusds.jose.jwk.source.RemoteJWKSet;
+import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -14,21 +14,21 @@ class RemoteJWKSSetHelperTest {
     @Test
     void testValidUrl() {
         RemoteJWKSSetHelper remoteJWKSSetHelper = new RemoteJWKSSetHelper();
-        RemoteJWKSet<SecurityContext>  remoteJWKSet = remoteJWKSSetHelper.getRemoteJWKSet(VALID_JWKS_URL);
+        JWKSource<SecurityContext> remoteJWKSet = remoteJWKSSetHelper.getRemoteJWKSet(VALID_JWKS_URL);
         Assertions.assertNotNull(remoteJWKSet);
     }
 
     @Test
     void testInvalidUrl() {
         RemoteJWKSSetHelper remoteJWKSSetHelper = new RemoteJWKSSetHelper();
-        RemoteJWKSet<SecurityContext>  remoteJWKSet = remoteJWKSSetHelper.getRemoteJWKSet(INVALID_JWKS_URL);
+        JWKSource<SecurityContext>  remoteJWKSet = remoteJWKSSetHelper.getRemoteJWKSet(INVALID_JWKS_URL);
         Assertions.assertNotNull(remoteJWKSet);
     }
 
     @Test
     void testMalformedUrl() {
         RemoteJWKSSetHelper remoteJWKSSetHelper = new RemoteJWKSSetHelper();
-        RemoteJWKSet<SecurityContext>  remoteJWKSet = remoteJWKSSetHelper.getRemoteJWKSet(MALFORMED_URL);
+        JWKSource<SecurityContext>  remoteJWKSet = remoteJWKSSetHelper.getRemoteJWKSet(MALFORMED_URL);
         Assertions.assertNull(remoteJWKSet);
     }
 

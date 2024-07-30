@@ -4,6 +4,8 @@ import com.github.openjson.JSONObject;
 import com.mastercard.fdx.mock.oauth2.server.common.ApplicationConstant;
 import com.mastercard.fdx.mock.oauth2.server.config.ApplicationProperties;
 import com.mastercard.fdx.mock.oauth2.server.consent.AccountConsentResponse;
+import com.mastercard.fdx.mock.oauth2.server.consent.CustomerConsent;
+import com.mastercard.fdx.mock.oauth2.server.consent.CustomerConsentRepository;
 import com.mastercard.fdx.mock.oauth2.server.par.PushAuthorizationRequestData;
 import com.mastercard.fdx.mock.oauth2.server.par.PushAuthorizationRequestRepository;
 import com.mastercard.fdx.mock.oauth2.server.utils.Jwks;
@@ -29,6 +31,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -76,6 +79,9 @@ class AccountConsentServiceTest {
     @Mock
     private PushAuthorizationRequestRepository parRepo;
 
+    @Mock
+    private CustomerConsentRepository customerConsentRepository;
+
     @InjectMocks
     private AccountConsentService acs;
 
@@ -92,6 +98,19 @@ class AccountConsentServiceTest {
         ResponseEntity<String> res = acs.getAccounts("USER1");
         assertEquals(200, res.getStatusCodeValue());
         assertEquals("TEST_DATA", res.getBody());
+    }
+
+    @Test
+    void testGetAccountsInvalid() {
+
+        Mockito.when(restTemplate.exchange(
+                Mockito.anyString(),
+                Mockito.any(HttpMethod.class),
+                Mockito.any(HttpEntity.class),
+                Mockito.any(Class.class),
+                Mockito.anyMap())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
+
+        assertNull(acs.getAccounts("USER1"));
     }
 
     @Test
@@ -124,7 +143,7 @@ class AccountConsentServiceTest {
         checkAccountConsent(res);
     }
 
-    //@Test
+    @Test
     void testValidateClientAssertion() throws RemoteKeySourceException {
         List<JWK> jwks = new ArrayList<>();
         JWK adrJwk = Jwks.generateRSAJwk("ADRJWK-ID", KeyUse.SIGNATURE, JWSAlgorithm.PS256);
@@ -157,6 +176,17 @@ class AccountConsentServiceTest {
     }
 
     @Test
+    void testValidateClientAssertion_clientIncorrect() {
+        JWK adrJwk = Jwks.generateRSAJwk("ADRJWK-ID", KeyUse.SIGNATURE, JWSAlgorithm.PS256);
+
+        String dhAdrClientId = "abcd";
+        String signedClientAssertion = generateSignedClientAssertion(adrJwk, "dhAdrClientId");
+
+        boolean result = acs.validateClientAssertion(dhAdrClientId, ApplicationConstant.OAUTH_CLIENT_ASSERTION_TYPE_JWT_BEARER, signedClientAssertion);
+        assertFalse(result);
+    }
+
+    @Test
     void testValidateClientAssertion_InvalidClientAssertion() {
         boolean result = acs.validateClientAssertion("clientId", ApplicationConstant.OAUTH_CLIENT_ASSERTION_TYPE_JWT_BEARER, "INVALID_CLIENT_ASSERTION");
         assertFalse(result);
@@ -168,7 +198,7 @@ class AccountConsentServiceTest {
         assertFalse(result);
     }
 
-    //@Test
+    @Test
     void testValidateClientAssertion_BadSignature() throws RemoteKeySourceException {
         List<JWK> jwks = new ArrayList<>();
         JWK adrJwk = Jwks.generateRSAJwk("ADRJWK-ID", KeyUse.SIGNATURE, JWSAlgorithm.PS256);
@@ -209,6 +239,29 @@ class AccountConsentServiceTest {
         String parObj = PushAuthorizationRequestTestUtils.generateSignedPAR(jwk, true, OAuth2AuthorizationRequestUtils.MAX_SHARING_DURATION);
         ModelAndView mv = acs.requestAccountConsent("CLIENT_ID", "SCOPES", "STATE", null, parObj);
         assertNotNull(mv);
+    }
+
+    @Test
+    void testRegisterConsent_Case1() {
+
+        AccountConsentResponse accountConsent = createTestAccountConsent();
+
+        AccountConsentResponse res = acs.registerConsent("preConsentId", "USER1", Arrays.asList("ACCOUNT_ID1", "ACCOUNT_ID1"), 365);
+        assertNotNull(res);
+    }
+
+    @Test
+    void testExists(){
+        when(customerConsentRepository.findByConsentId(null)).thenReturn(new CustomerConsent());
+        boolean res = acs.exists(null);
+        assertTrue(res);
+    }
+
+    @Test
+    void testExistsFalse(){
+        when(customerConsentRepository.findByConsentId(null)).thenReturn(null);
+        boolean res = acs.exists(null);
+        assertFalse(res);
     }
 
     private String generateSignedClientAssertion(JWK adrJwk, String dhAdrClientId) {

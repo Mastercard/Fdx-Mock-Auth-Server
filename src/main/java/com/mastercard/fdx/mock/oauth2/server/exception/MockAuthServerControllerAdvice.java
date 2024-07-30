@@ -39,7 +39,7 @@ public class MockAuthServerControllerAdvice {
     }
 
     @ExceptionHandler(MissingRequestHeaderException.class)
-    public final ResponseEntity<Error> handleSecurityException(HttpServletRequest request, final MissingRequestHeaderException ex) {
+    public final ResponseEntity<Error> handleMissingRequestHeaderException(HttpServletRequest request, final MissingRequestHeaderException ex) {
         logGenericException(ex);
         return getError(HttpStatus.BAD_REQUEST, HttpStatus.BAD_REQUEST.getReasonPhrase(), ex.getMessage());
     }

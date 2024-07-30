@@ -10,6 +10,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -60,7 +61,7 @@ class FdxUserServiceTest {
                 eq(HttpMethod.GET),
                 any(HttpEntity.class),
                 eq(FdxUser.class)
-        )).thenReturn(new ResponseEntity<>((FdxUser) null, HttpStatus.NOT_FOUND));
+        )).thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND));
 
         FdxUser user = userService.getUser("USER_NOT_EXIST");
         assertNull(user);

@@ -1,5 +1,6 @@
 package com.mastercard.fdx.mock.oauth2.server.utils;
 
+import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.jwk.source.RemoteJWKSet;
 import com.nimbusds.jose.proc.SecurityContext;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +18,7 @@ import java.net.URL;
 @Slf4j
 public class RemoteJWKSSetHelper {
 
-    public RemoteJWKSet<SecurityContext> getRemoteJWKSet(String url) {
+    public JWKSource<SecurityContext> getRemoteJWKSet(String url) {
         try {
             return new RemoteJWKSet<>(new URL(url));
         } catch (MalformedURLException e) {
