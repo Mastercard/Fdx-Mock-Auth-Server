@@ -31,7 +31,7 @@ Our solution excels in token issuance, validation, and management, serving as a 
 1. Run the request from Postman: `Authorize (via PAR+RAR)`.
 2. Copy the login URL from the `PAR Authorize` request curl section.
 3. Paste the login URL in your browser to start the consent journey.
-4. Log in with a valid user (fdxuser, fdxuser1, fdxuser2). After a successful login, you can select the accounts for which you want to give consent.
+4. Log in with a valid [user](https://developer.mastercard.com/fdx-dev-hub/documentation/implementation-checklist/#test-user-profiles) (fdxuser, fdxuser1, fdxuser2). After a successful login, you can select the accounts for which you want to give consent.
 5. Once the account is selected, hit the submit button.
 6. Upon successful consent, you'll receive a success message. Copy the authorization code (the "code" field) from the URL in the browser.
 7. Paste the authorization code into the body of the Get Access Token request, under the "code" key.
@@ -42,7 +42,7 @@ Our solution excels in token issuance, validation, and management, serving as a 
 1. Uncomment the following properties from [application.properties](https://github.com/Mastercard/Fdx-Mock-Auth-Server/blob/main/src/main/resources/application.properties) so that the authorization server can interact with the [resource server](https://github.com/Mastercard/Fdx-Mock-Resource-Server) running on the docker container.
    1. mock.res.server.baseurl=http://fdx.mock.resource.server:9090
    2. mock.res.server.userurl=http://fdx.mock.resource.server:9090/user
-2. Build the Docker image using the Docker build command. Run this command from the directory containing the [Dockerfile](https://github.com/Mastercard/Fdx-Mock-Auth-Server/blob/main/Dockerfile)
+2. Navigate into the project's root directory which contains the [Dockerfile](https://github.com/Mastercard/Fdx-Mock-Auth-Server/blob/main/Dockerfile) & build the Docker image using the Docker build command.
    1. "docker build -t fdx-mock-auth-server ."
 3. Verify that the Docker image was successfully created. You should see <image-name> listed in the output.
 4. Since both servers will be running on Docker containers, their hosts will be localhost.
