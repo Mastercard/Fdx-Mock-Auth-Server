@@ -1,13 +1,13 @@
 
 # FDX Authorization Server
 
-### Mastercard Developer Hub documentation: https://developer.mastercard.com/fdx-dev-hub/documentation
+#### Mastercard Developer Hub documentation: https://developer.mastercard.com/fdx-dev-hub/documentation
 
 ## Description
-Introducing our cutting-edge authentication server solution, meticulously designed to empower banks and financial institutions with a robust and secure authentication framework. Our system seamlessly integrates with various authentication servers, with a strong focus on OAuth 2.0 and OpenID Connect (OIDC)—both of which are renowned for their security and widespread adoption.
+Introducing our cutting-edge authentication server solution, meticulously designed to empower banks and financial institutions with a robust and secure authentication framework. This server is implemented with a strong focus on OAuth 2.0 and OpenID Connect (OIDC)—both of which are renowned for their security and widespread adoption.
 Our solution excels in token issuance, validation, and management, serving as a secure gateway for client applications and ensuring that all transactions are handled with the utmost integrity. Moreover, all API responses are fully compliant with the Financial Data Exchange (FDX) 6.0 standard, guaranteeing interoperability, data integrity, and adherence to industry best practices.
 
-### FDX Resource Server - https://github.com/Mastercard/Fdx-Mock-Resource-Server
+#### FDX Resource Server - https://github.com/Mastercard/Fdx-Mock-Resource-Server
 
 ## Prerequisites
 1. An IDE that supports Java 17 or above (e.g., Eclipse, IntelliJ IDEA, Spring Tool Suite).
@@ -36,7 +36,7 @@ Our solution excels in token issuance, validation, and management, serving as a 
 6. Upon successful consent, you'll receive a success message. Copy the authorization code (the "code" field) from the URL in the browser.
 7. Paste the authorization code into the body of the Get Access Token request, under the "code" key.
 8. Hit the `Get Access Token` request endpoint. You will get the authorization token.
-9. Now you can access the resource API using this authorization token. Link to Resource server - https://github.com/Mastercard/Fdx-Mock-Resource-Server
+9. Now you can access the resource API using this authorization token.
 
 ## Instructions for Building a Docker Image
 1. Uncomment the following properties from [application.properties](https://github.com/Mastercard/Fdx-Mock-Auth-Server/blob/main/src/main/resources/application.properties) so that the authorization server can interact with the [resource server](https://github.com/Mastercard/Fdx-Mock-Resource-Server) running on the docker container.
