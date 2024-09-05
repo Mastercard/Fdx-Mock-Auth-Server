@@ -1,11 +1,55 @@
 {
 	"info": {
-		"_postman_id": "2748633d-a89b-4053-a69a-2cfd02753429",
-		"name": "Bank API Nexus",
+		"_postman_id": "129883a9-586a-47a5-88da-a1d79cc5012d",
+		"name": "FDX Developer Hub",
+		"description": "**Notes:**\n\n- We need to update drJwtSecret in postman environment from Github’s project resource folders [src/main/resources/dr/drpk.txt](https://github.com/Mastercard/Fdx-Mock-Auth-Server/blob/main/src/main/resources/dr/drpk.txt)\n    \n- We need to add pmlib_code(A crypto utility library for Postman) to global variable, refer this [url](https://joolfe.github.io/postman-util-lib/#installation) to get variable value.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "13644221"
+		"_exporter_id": "36464997",
+		"_collection_link": "https://www.postman.com/ma-fdx-dev-hub/fdx-developer-hub/collection/p928zhg/fdx-developer-hub?action=share&source=collection_link&creator=36464997"
 	},
 	"item": [
+		{
+			"name": "Server metadata",
+			"item": [
+				{
+					"name": "OIDC Discovery document",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/.well-known/openid-configuration",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								".well-known",
+								"openid-configuration"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "JWKS",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/oauth2/jwks",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"oauth2",
+								"jwks"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Provides metadata about the OAuth 2.0 authorization server, including endpoint locations and supported features."
+		},
 		{
 			"name": "Dynamic Client Registration",
 			"item": [
@@ -285,7 +329,8 @@
 					},
 					"response": []
 				}
-			]
+			],
+			"description": "As per [RFC 7591 - OAuth 2.0 Dynamic Client Registration Protocol (ietf.org)](https://datatracker.ietf.org/doc/html/rfc7591)"
 		},
 		{
 			"name": "PAR+RAR Authorize",
@@ -325,7 +370,6 @@
 									"// Prepare timestamp in seconds\r",
 									"var currentTimestamp = Math.floor(Date.now() / 1000)\r",
 									"\r",
-									"// Based on https://consumerdatastandardsaustralia.github.io/register/#registration-request-using-jwt\r",
 									"console.log(\"dataholderClientId: \", dataholderClientId)\r",
 									"\r",
 									"var authorisationRequestClaims = {\r",
@@ -375,7 +419,8 @@
 									"console.log('dataholderPARAssertionJwt', signedToken)\r",
 									""
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						},
 						{
@@ -432,7 +477,8 @@
 									"pm.visualizer.set(template);\r",
 									""
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -556,7 +602,8 @@
 					},
 					"response": []
 				}
-			]
+			],
+			"description": "Please refer RFC - [RFC 9126 - OAuth 2.0 Pushed Authorization Requests (ietf.org)](https://datatracker.ietf.org/doc/html/rfc9126) and [RFC 9396 - OAuth 2.0 Rich Authorization Requests (ietf.org)](https://datatracker.ietf.org/doc/html/rfc9396) for implementation."
 		},
 		{
 			"name": "Non PAR Authorize",
@@ -594,24 +641,11 @@
 									"// Prepare timestamp in seconds\r",
 									"var currentTimestamp = Math.floor(Date.now() / 1000)\r",
 									"\r",
-									"// Based on https://consumerdatastandardsaustralia.github.io/register/#registration-request-using-jwt\r",
 									"console.log(\"dataholderClientId: \", dataholderClientId)\r",
 									"\r",
 									"var authorisationRequestClaims = {\r",
-									"\t\tsharing_duration: dataholderAccessSharingDuration,  \r",
-									"\t\tcdr_arrangement_id: null,               // \"<null for initial call, value is obtain from token response for future calls ???\"\r",
-									"\t\tuserinfo: {\r",
-									"\t\t\tgiven_name: null,                   // \"<null as not used>\"\r",
-									"\t\t\tfamily_name: null,                  // \"<null as not used>\"\r",
-									"\t\t},\r",
-									"\t\tid_token: {\r",
-									"\t\t\tacr: {\r",
-									"                \"essential\": true,\r",
-									"                \"values\": [\r",
-									"                    \"urn:cds.au:cdr:3\"\r",
-									"                ]\r",
-									"            }\r",
-									"\t\t}    \r",
+									"\t\t//consent_id: \"68559c89-261e-41d8-8f07-87b765089a4b\",\r",
+									"        sharing_duration: dataholderAccessSharingDuration\r",
 									"}\r",
 									"\r",
 									"var pkceClaims = {\r",
@@ -670,7 +704,8 @@
 									"pm.visualizer.set(template);\r",
 									""
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -821,7 +856,7 @@
 								},
 								{
 									"key": "code",
-									"value": "XSyiHAB1Q8QTulcJVhpe5pQqaPvnR9K-tJURygHRXO6qiP8jbYVQZNpUPvbUvt12YNUXzaM6R0XChGhlaRp6Sie5PwWU4gXDg-Idd11eNOefVMxydja6SMKSSHaPYPaS",
+									"value": "LvK-fwhBtMxV0fZRDIVnoRZWLx5Ln5QqsON3U6qPCubky9iCLitSTfgNlGayxG7UY2QZyKxGsvO6rvlQnHR155f50Tp6RkWGBC3pBY97IF3_aEmLf3Tc2BdGaABvx1s0",
 									"type": "text"
 								},
 								{
@@ -971,7 +1006,8 @@
 					},
 					"response": []
 				}
-			]
+			],
+			"description": "[https://datatracker.ietf.org/doc/html/rfc6749](https://datatracker.ietf.org/doc/html/rfc6749)"
 		},
 		{
 			"name": "Token Introspection",
@@ -1626,11 +1662,7 @@
 								"header": [
 									{
 										"key": "Authorization",
-										"value": "Bearer eyJraWQiOiI5OWJjMzNlZS1hMDRkLTRhODktOGFlMC01ZGViZDIxNDVhYWIiLCJ0eXAiOiJhdCtqd3QiLCJhbGciOiJQUzI1NiJ9.eyJzdWIiOiJmZHh1c2VyIiwiYXVkIjoiZGgtZmR4LWNsaWVudC1yZWdpc3RyYXItMiIsIm5iZiI6MTcxODM2NDUzMiwiYWNjb3VudF9pZCI6WyIxMDAwMSIsIjIwMDAxIiwiMzc0NjI3MiJdLCJzY29wZSI6WyJmZHg6dHJhbnNhY3Rpb25zOnJlYWQiLCJmZHg6YWNjb3VudGJhc2ljOnJlYWQiLCJvcGVuaWQiLCJmZHg6Y3VzdG9tZXJwZXJzb25hbDpyZWFkIiwiZmR4OmFjY291bnRkZXRhaWxlZDpyZWFkIiwiZmR4OmludmVzdG1lbnRzOnJlYWQiLCJmZHg6cGF5bWVudHN1cHBvcnQ6cmVhZCIsImZkeDphY2NvdW50cGF5bWVudHM6cmVhZCIsImZkeDpiaWxsczpyZWFkIiwiZmR4OmltYWdlczpyZWFkIiwiZmR4OnJld2FyZHM6cmVhZCIsImZkeDp0YXg6cmVhZCIsImZkeDpzdGF0ZW1lbnRzOnJlYWQiLCJmZHg6Y3VzdG9tZXJjb250YWN0OnJlYWQiXSwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwIiwiZXhwIjoxNzE4MzY0ODMyLCJpYXQiOjE3MTgzNjQ1MzIsImp0aSI6ImFhY2Y1MzI5LTU0YTMtNDc1MS1hYWUzLWI5NDRkOGRjNmVjZSIsImZkeENvbnNlbnRJZCI6IjZjZjVhM2Y1LTIyYTktNGYzYy05MDQxLTBjZmM4MjE5ZTk0YSIsInNoYXJpbmdfZXhwaXJlc19hdCI6MTc0OTkwMDUwOH0.g0bobuW_FduHBGf6vQlAn9gejTUdQlu-up_gxZD5Ry8n1CV6hQkzOBCMqFucYLRawlRFaX-sAChaZKNaq_pBbjpA85orj82s-yL1UXTWlMFFX-PsHmkR8zd56rex0ZPaFVt5QIBDg1Dtb5W3n6aVEMq3yX4a441_ZbKzD8MZ89Bd5MrbWoe5eX74McPEJuAN7cOOb1A3-Wdtk_G_ZGQ3LLh2u0u7A8KaqYyNbbLlDXaFHNPVDP6jJEM67rQuEYEQ7C0M9qktOVMAGSBTdYsITpJWDwq4F5hIdonzAWGzEFeAaj0N6LoFMXXo1KXQVrbhH_fkGTNDwaeVUVnHIPEDrQ"
-									},
-									{
-										"key": "Cookie",
-										"value": "JSESSIONID=D4A027FDA12BE6EEAA09215B17FFC048"
+										"value": "Bearer {{authorize_token}}"
 									}
 								],
 								"url": {
@@ -1656,15 +1688,11 @@
 								"header": [
 									{
 										"key": "Authorization",
-										"value": "Bearer eyJraWQiOiI5OWJjMzNlZS1hMDRkLTRhODktOGFlMC01ZGViZDIxNDVhYWIiLCJ0eXAiOiJhdCtqd3QiLCJhbGciOiJQUzI1NiJ9.eyJzdWIiOiJmZHh1c2VyIiwiYXVkIjoiZGgtZmR4LWNsaWVudC1yZWdpc3RyYXItMiIsIm5iZiI6MTcxODM2NDUzMiwiYWNjb3VudF9pZCI6WyIxMDAwMSIsIjIwMDAxIiwiMzc0NjI3MiJdLCJzY29wZSI6WyJmZHg6dHJhbnNhY3Rpb25zOnJlYWQiLCJmZHg6YWNjb3VudGJhc2ljOnJlYWQiLCJvcGVuaWQiLCJmZHg6Y3VzdG9tZXJwZXJzb25hbDpyZWFkIiwiZmR4OmFjY291bnRkZXRhaWxlZDpyZWFkIiwiZmR4OmludmVzdG1lbnRzOnJlYWQiLCJmZHg6cGF5bWVudHN1cHBvcnQ6cmVhZCIsImZkeDphY2NvdW50cGF5bWVudHM6cmVhZCIsImZkeDpiaWxsczpyZWFkIiwiZmR4OmltYWdlczpyZWFkIiwiZmR4OnJld2FyZHM6cmVhZCIsImZkeDp0YXg6cmVhZCIsImZkeDpzdGF0ZW1lbnRzOnJlYWQiLCJmZHg6Y3VzdG9tZXJjb250YWN0OnJlYWQiXSwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwIiwiZXhwIjoxNzE4MzY0ODMyLCJpYXQiOjE3MTgzNjQ1MzIsImp0aSI6ImFhY2Y1MzI5LTU0YTMtNDc1MS1hYWUzLWI5NDRkOGRjNmVjZSIsImZkeENvbnNlbnRJZCI6IjZjZjVhM2Y1LTIyYTktNGYzYy05MDQxLTBjZmM4MjE5ZTk0YSIsInNoYXJpbmdfZXhwaXJlc19hdCI6MTc0OTkwMDUwOH0.g0bobuW_FduHBGf6vQlAn9gejTUdQlu-up_gxZD5Ry8n1CV6hQkzOBCMqFucYLRawlRFaX-sAChaZKNaq_pBbjpA85orj82s-yL1UXTWlMFFX-PsHmkR8zd56rex0ZPaFVt5QIBDg1Dtb5W3n6aVEMq3yX4a441_ZbKzD8MZ89Bd5MrbWoe5eX74McPEJuAN7cOOb1A3-Wdtk_G_ZGQ3LLh2u0u7A8KaqYyNbbLlDXaFHNPVDP6jJEM67rQuEYEQ7C0M9qktOVMAGSBTdYsITpJWDwq4F5hIdonzAWGzEFeAaj0N6LoFMXXo1KXQVrbhH_fkGTNDwaeVUVnHIPEDrQ"
+										"value": "Bearer {{authorize_token}}"
 									},
 									{
 										"key": "Accept",
 										"value": "application/pdf"
-									},
-									{
-										"key": "Cookie",
-										"value": "JSESSIONID=D4A027FDA12BE6EEAA09215B17FFC048"
 									}
 								],
 								"url": {
@@ -1793,8 +1821,8 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"type": "text",
-								"value": "{{consent_auth_token}}"
+								"value": "{{consent_auth_token}}",
+								"type": "text"
 							}
 						],
 						"body": {
@@ -1855,7 +1883,8 @@
 					},
 					"response": []
 				}
-			]
+			],
+			"description": "As per FDX API v6.0. [Home (financialdataexchange.org)](https://financialdataexchange.org/)[https://financialdataexchange.org/](https://financialdataexchange.org/)"
 		},
 		{
 			"name": "User APIs",

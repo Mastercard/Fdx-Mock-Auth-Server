@@ -19,9 +19,11 @@ Our solution excels in token issuance, validation, and management, serving as a 
 1. Download the project from GitHub.
 2. Import the project into your preferred IDE as an existing Maven project.
 3. Run the application as a Java Application.
-4. Once the project is running, download the Postman collection from the resource/postman folder. 
-5. Import the downloaded Postman collection into Postman. 
-6. You can now use the imported collection to send requests to the API endpoints and observe the responses.
+4. Once the project is running, download the Postman collection and environment from the resource/postman folder. 
+5. Import the downloaded Postman collection and environment into Postman. 
+6. We need to update drJwtSecret in postman environment from project resource folders src/main/resources/dr/drpk.txt
+7. We need to add pmlib_code(A crypto utility library for Postman) to global variable, refer this [url](https://joolfe.github.io/postman-util-lib/#installation) to get variable value.
+8. You can now use the imported collection to send requests to the API endpoints and observe the responses.
 
 ## Usage
 **Note:** To run through consent journey and resource APIs skipping DCR, follow below steps with default client id: dh-fdx-client-registrar-2
