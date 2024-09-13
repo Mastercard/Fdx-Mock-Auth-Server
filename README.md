@@ -1,7 +1,7 @@
 
 # FDX Authorization Server
 
-#### Mastercard Developer Hub documentation: https://developer.mastercard.com/fdx-dev-hub/documentation
+#### Mastercard Developer Hub for FDX APIs documentation: https://developer.mastercard.com/fdx-dev-hub/documentation
 
 ## Description
 Introducing our cutting-edge authentication server solution, meticulously designed to empower banks and financial institutions with a robust and secure authentication framework. This server is implemented with a strong focus on OAuth 2.0 and OpenID Connect (OIDC)—both of which are renowned for their security and widespread adoption.
