@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "129883a9-586a-47a5-88da-a1d79cc5012d",
-		"name": "FDX Developer Hub",
+		"name": "Mastercard Developer Hub for FDX APIs",
 		"description": "**Notes:**\n\n- We need to update drJwtSecret in postman environment from Github’s project resource folders [src/main/resources/dr/drpk.txt](https://github.com/Mastercard/Fdx-Mock-Auth-Server/blob/main/src/main/resources/dr/drpk.txt)\n    \n- We need to add pmlib_code(A crypto utility library for Postman) to global variable, refer this [url](https://joolfe.github.io/postman-util-lib/#installation) to get variable value.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "36464997",
