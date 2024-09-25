@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URI;
 
@@ -34,6 +35,7 @@ class PushAuthorizationRequestControllerTest {
         ResponseEntity<JSONObject> res = parController.handlePushedAuthorizationRequest(null);
         assertEquals("TEST_URI", res.getBody().getAsString("request_uri"));
         assertEquals("90", res.getBody().getAsString("expires_in"));
+        assertEquals(201, res.getStatusCode().value());
     }
 
     @Test
