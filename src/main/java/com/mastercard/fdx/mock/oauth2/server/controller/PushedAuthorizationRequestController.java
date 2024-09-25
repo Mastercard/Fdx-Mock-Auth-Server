@@ -32,7 +32,7 @@ public class PushedAuthorizationRequestController {
         PushedAuthorizationResponse res = parService.processPAR(body);
 
         if (res instanceof PushedAuthorizationSuccessResponse)
-            return new ResponseEntity<>(res.toSuccessResponse().toJSONObject(), HttpStatus.OK);
+            return new ResponseEntity<>(res.toSuccessResponse().toJSONObject(), HttpStatus.CREATED);
         else
             return new ResponseEntity<>(res.toErrorResponse().getErrorObject().toJSONObject() , HttpStatus.BAD_REQUEST);
     }
