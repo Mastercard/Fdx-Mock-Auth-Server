@@ -18,7 +18,7 @@ Our solution excels in token issuance, validation, and management, serving as a 
 ## Installation Instructions
 1. Download the project from GitHub.
 2. Import the project into your preferred IDE as an existing Maven project.
-3. Run the application as a Java Application.
+3. Run the application as a Java Application. **Add VM options while running application --add-opens=java.base/java.io=ALL-UNNAMED** 
 4. Once the project is running, download the Postman collection and environment from the resource/postman folder. 
 5. Import the downloaded Postman collection and environment into Postman. 
 6. We need to update drJwtSecret in postman environment from project resource folders src/main/resources/dr/drpk.txt
