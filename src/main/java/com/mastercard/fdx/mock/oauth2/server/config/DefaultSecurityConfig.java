@@ -90,7 +90,7 @@ public class DefaultSecurityConfig {
     @Profile("local")
     UserDetailsService localUsers() {
         UserDetails user = User.withUsername("fdxuser")
-                .password("password")
+                .password("password")//NOSONAR
                 .roles("USER")
                 .passwordEncoder(new BCryptPasswordEncoder()::encode)
                 .build();
