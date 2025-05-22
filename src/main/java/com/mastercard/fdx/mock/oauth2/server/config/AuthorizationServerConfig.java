@@ -28,6 +28,7 @@ import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -174,6 +175,12 @@ public class AuthorizationServerConfig {
 
 		saveCustomerConsentDetails(request, authentication, authorizationCodeRequestAuthentication);
 		this.redirectStrategy.sendRedirect(request, response, uriBuilder.toUriString());
+		//Below code logs-out the current session. Issuing new login on same browser.
+		HttpSession session = request.getSession(false);
+		if (session != null) {
+			session.invalidate();
+		}
+
 	}
 
 	private void saveCustomerConsentDetails(HttpServletRequest request, Authentication authentication, OAuth2AuthorizationCodeRequestAuthenticationToken authorizationCodeRequestAuthentication) {
