@@ -2,7 +2,7 @@ package com.mastercard.fdx.mock.oauth2.server.controller;
 
 import com.mastercard.fdx.mock.oauth2.server.common.ErrorResponse;
 import com.mastercard.fdx.mock.oauth2.server.service.DynamicClientRegistrationService;
-import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Safelist;
 import org.springframework.beans.factory.annotation.Autowired;
