@@ -17,9 +17,9 @@ USER app
 
 WORKDIR /usr/src/app
 
-COPY --from=build /usr/src/target/fdx-mock-auth-server-*.jar /usr/src/app/fdx-mock-auth-server.jar
+COPY --from=build /usr/src/target/fdx-mock-auth-server-*.jar app.jar
 COPY src/main/resources /usr/src/app/src/main/resources
 
-CMD java -jar /usr/src/app/fdx-mock-auth-server.jar
+CMD ["java", "--add-opens", "java.base/java.io=ALL-UNNAMED", "-jar", "app.jar"]
 EXPOSE 8080 8081
 
