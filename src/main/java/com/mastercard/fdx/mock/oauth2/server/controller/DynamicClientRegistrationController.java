@@ -59,7 +59,7 @@ public class DynamicClientRegistrationController {
      * @param authorization
      * @return
      */
-    @GetMapping(path = "/register/{clientId}")
+    @GetMapping(path = "/register/{clientId}", produces = "application/json")
     public ResponseEntity<String> get(@PathVariable("clientId") String clientId, @RequestHeader(AUTHORIZATION) String authorization) {
         try {
             authorization = Jsoup.clean(StringEscapeUtils.escapeHtml4(authorization), Safelist.basic());

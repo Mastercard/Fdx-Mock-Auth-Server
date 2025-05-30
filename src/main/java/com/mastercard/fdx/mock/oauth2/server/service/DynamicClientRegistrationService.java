@@ -3,13 +3,17 @@ package com.mastercard.fdx.mock.oauth2.server.service;
 import com.github.openjson.JSONArray;
 import com.github.openjson.JSONException;
 import com.github.openjson.JSONObject;
+import com.mastercard.fdx.mock.oauth2.server.common.ClientConstant;
 import com.mastercard.fdx.mock.oauth2.server.common.ErrorResponse;
 import com.mastercard.fdx.mock.oauth2.server.config.ApplicationProperties;
+import com.mastercard.fdx.mock.oauth2.server.entity.OAuth2RegisteredClientFDX;
+import com.mastercard.fdx.mock.oauth2.server.repository.OAuth2RegisteredClientRepository;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.proc.BadJOSEException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +23,9 @@ import org.springframework.security.oauth2.server.authorization.oidc.OidcClientM
 import org.springframework.stereotype.Service;
 
 import java.text.ParseException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 
 @Service
@@ -42,6 +48,9 @@ public class DynamicClientRegistrationService {
 
     private RegisteredClientRepository registeredClientRepository;
 
+    @Autowired
+    OAuth2RegisteredClientRepository oAuth2RegisteredClientRepository;
+
     public ResponseEntity<String> register(String clientRegistrationReq) throws ErrorResponse {
         try {
             var dcrRequest = parsePayload(clientRegistrationReq);
@@ -52,6 +61,10 @@ public class DynamicClientRegistrationService {
 
             if (resp.getStatusCode().value() == 201) {
                 resp = makeRegisterSuccessResponse(resp);
+                var dcrResp = new JSONObject(resp.getBody());
+                var client_id = dcrResp.optString(OidcClientMetadataClaimNames.CLIENT_ID);
+                JSONObject jsonObject = new JSONObject(clientRegistrationReq);
+                saveClientRegistration(client_id,jsonObject);
             }
 
             return resp;
@@ -60,6 +73,25 @@ public class DynamicClientRegistrationService {
             log.error("Failed to validate Client payload " , ex);
             throw new ErrorResponse(ERROR_INVALID_CLIENT_METADATA, ex.getLocalizedMessage());
         }
+    }
+    void saveClientRegistration(String client_id,JSONObject clientRegistrationResponseJson) {
+        OAuth2RegisteredClientFDX client = mapJsonToClient(clientRegistrationResponseJson);
+        client.setId(client_id);
+        oAuth2RegisteredClientRepository.save(client);
+    }
+
+    private OAuth2RegisteredClientFDX mapJsonToClient(JSONObject json) {
+        return OAuth2RegisteredClientFDX.builder()
+                .clientUri(json.optString(ClientConstant.CLIENT_URI))
+                .contacts(json.optString(ClientConstant.CONTACTS))
+                .description(json.optString(ClientConstant.DESCRIPTION))
+                .durationType(json.optString(ClientConstant.DURATION_TYPE))
+                .durationPeriod(json.optString(ClientConstant.DURATION_PERIOD))
+                .lookbackPeriod(json.optString(ClientConstant.LOOKBACK_PERIOD))
+                .logoUri(json.optString(ClientConstant.LOGO_URI))
+                .registryReferences(json.optString(ClientConstant.REGISTRY_REFERENCES))
+                .intermediaries(json.optString(ClientConstant.INTERMEDIARIES))
+                .build();
     }
 
     public ResponseEntity<String> modify(String clientModificationReq, String authorization, String clientId) throws ErrorResponse {
@@ -116,7 +148,23 @@ public class DynamicClientRegistrationService {
     }
 
     public ResponseEntity<String> get(String clientId, String dhDcrAccessToken) throws ErrorResponse {
-        return authServerService.getClient(clientId, dhDcrAccessToken);
+        ResponseEntity<String> client = authServerService.getClient(clientId, dhDcrAccessToken);
+        if (client.getStatusCode() == HttpStatus.OK) {
+            OAuth2RegisteredClientFDX fdxClient = oAuth2RegisteredClientRepository.findById(clientId)
+                    .orElseThrow(() -> new ErrorResponse(ERROR_INVALID_CLIENT_METADATA, "Client not found: " + clientId));
+            var dcrResp = new JSONObject(client.getBody());
+            dcrResp.put(ClientConstant.CLIENT_URI, fdxClient.getClientUri());
+            dcrResp.put(ClientConstant.CONTACTS, new JSONArray(fdxClient.getContacts()));
+            dcrResp.put(ClientConstant.DESCRIPTION, fdxClient.getDescription());
+            dcrResp.put(ClientConstant.DURATION_TYPE, new JSONArray(fdxClient.getDurationType()));
+            dcrResp.put(ClientConstant.DURATION_PERIOD, fdxClient.getDurationPeriod());
+            dcrResp.put(ClientConstant.LOOKBACK_PERIOD, fdxClient.getLookbackPeriod());
+            dcrResp.put(ClientConstant.LOGO_URI, fdxClient.getLogoUri());
+            dcrResp.put(ClientConstant.REGISTRY_REFERENCES, new JSONArray(fdxClient.getRegistryReferences()));
+            dcrResp.put(ClientConstant.INTERMEDIARIES, new JSONArray(fdxClient.getIntermediaries()));
+            return ResponseEntity.status(client.getStatusCode()).body(dcrResp.toString());
+        }
+        return client;
     }
 
     public ResponseEntity<String> delete(String clientId, String authorization) throws ErrorResponse {
