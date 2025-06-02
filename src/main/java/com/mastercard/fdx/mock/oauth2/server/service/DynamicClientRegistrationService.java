@@ -21,10 +21,12 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.oidc.OidcClientMetadataClaimNames;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -64,9 +66,10 @@ public class DynamicClientRegistrationService {
                 var dcrResp = new JSONObject(resp.getBody());
                 var client_id = dcrResp.optString(OidcClientMetadataClaimNames.CLIENT_ID);
                 JSONObject jsonObject = new JSONObject(clientRegistrationReq);
-                saveClientRegistration(client_id,jsonObject);
+                OAuth2RegisteredClientFDX oAuth2RegisteredClientFDX = saveClientRegistration(client_id,jsonObject);
+                appendClientDataToResponse(dcrResp, oAuth2RegisteredClientFDX);
+                resp = ResponseEntity.status(resp.getStatusCode()).body(dcrResp.toString());
             }
-
             return resp;
         }
         catch (JSONException ex) {
@@ -74,10 +77,10 @@ public class DynamicClientRegistrationService {
             throw new ErrorResponse(ERROR_INVALID_CLIENT_METADATA, ex.getLocalizedMessage());
         }
     }
-    void saveClientRegistration(String client_id,JSONObject clientRegistrationResponseJson) {
+    OAuth2RegisteredClientFDX saveClientRegistration(String client_id,JSONObject clientRegistrationResponseJson) {
         OAuth2RegisteredClientFDX client = mapJsonToClient(clientRegistrationResponseJson);
         client.setId(client_id);
-        oAuth2RegisteredClientRepository.save(client);
+        return oAuth2RegisteredClientRepository.save(client);
     }
 
     private OAuth2RegisteredClientFDX mapJsonToClient(JSONObject json) {
@@ -153,29 +156,33 @@ public class DynamicClientRegistrationService {
             OAuth2RegisteredClientFDX fdxClient = oAuth2RegisteredClientRepository.findById(clientId)
                     .orElseThrow(() -> new ErrorResponse(ERROR_INVALID_CLIENT_METADATA, "Client not found: " + clientId));
             var dcrResp = new JSONObject(client.getBody());
-            dcrResp.put(ClientConstant.CLIENT_URI, fdxClient.getClientUri());
-            dcrResp.put(ClientConstant.CONTACTS, new JSONArray(fdxClient.getContacts()));
-            dcrResp.put(ClientConstant.DESCRIPTION, fdxClient.getDescription());
-            dcrResp.put(ClientConstant.DURATION_TYPE, new JSONArray(fdxClient.getDurationType()));
-            dcrResp.put(ClientConstant.DURATION_PERIOD, fdxClient.getDurationPeriod());
-            dcrResp.put(ClientConstant.LOOKBACK_PERIOD, fdxClient.getLookbackPeriod());
-            dcrResp.put(ClientConstant.LOGO_URI, fdxClient.getLogoUri());
-            dcrResp.put(ClientConstant.REGISTRY_REFERENCES, new JSONArray(fdxClient.getRegistryReferences()));
-            dcrResp.put(ClientConstant.INTERMEDIARIES, new JSONArray(fdxClient.getIntermediaries()));
+            appendClientDataToResponse(dcrResp, fdxClient);
             return ResponseEntity.status(client.getStatusCode()).body(dcrResp.toString());
         }
         return client;
+    }
+
+    private void appendClientDataToResponse(JSONObject dcrResp, OAuth2RegisteredClientFDX client) {
+        dcrResp.put(ClientConstant.CLIENT_URI, client.getClientUri());
+        dcrResp.put(ClientConstant.CONTACTS, new JSONArray(client.getContacts()));
+        dcrResp.put(ClientConstant.DESCRIPTION, client.getDescription());
+        dcrResp.put(ClientConstant.DURATION_TYPE, new JSONArray(client.getDurationType()));
+        dcrResp.put(ClientConstant.DURATION_PERIOD, client.getDurationPeriod());
+        dcrResp.put(ClientConstant.LOOKBACK_PERIOD, client.getLookbackPeriod());
+        dcrResp.put(ClientConstant.LOGO_URI, client.getLogoUri());
+        dcrResp.put(ClientConstant.REGISTRY_REFERENCES, new JSONArray(client.getRegistryReferences()));
+        dcrResp.put(ClientConstant.INTERMEDIARIES, new JSONArray(client.getIntermediaries()));
     }
 
     public ResponseEntity<String> delete(String clientId, String authorization) throws ErrorResponse {
         validateAuthorization(authorization, clientId);
 
         String deletedClientId = clientDeletionService.deleteClient(clientId);
-
         if (deletedClientId == null) {
             throw new ErrorResponse(ERROR_INVALID_CLIENT_METADATA, deletedClientId);
         }
-
+        // delete from oauth2_registered_client_fdx_v6_4_0_update table
+        oAuth2RegisteredClientRepository.deleteById(clientId);
         return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)
                 .contentType(MediaType.APPLICATION_JSON)

@@ -24,7 +24,7 @@ public class DynamicClientRegistrationController {
      * @param clientRegistrationReq
      * @return
      */
-    @PostMapping(path = "/register")
+    @PostMapping(path = "/register", produces = "application/json")
     public ResponseEntity<String> register(@RequestBody String clientRegistrationReq) {
         try {
             clientRegistrationReq = Jsoup.clean(StringEscapeUtils.escapeHtml4(clientRegistrationReq), Safelist.basic());
@@ -41,7 +41,7 @@ public class DynamicClientRegistrationController {
      * @param authorization
      * @return
      */
-    @PutMapping(path = "/register/{clientId}")
+    @PutMapping(path = "/register/{clientId}", produces = "application/json")
     public ResponseEntity<String> modify(@RequestBody String clientModificationReq,
                                          @PathVariable("clientId") String clientId,
                                          @RequestHeader(AUTHORIZATION) String authorization) {
