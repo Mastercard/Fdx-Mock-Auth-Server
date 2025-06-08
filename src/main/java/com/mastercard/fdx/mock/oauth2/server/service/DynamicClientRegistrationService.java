@@ -21,12 +21,10 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.oidc.OidcClientMetadataClaimNames;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -67,7 +65,7 @@ public class DynamicClientRegistrationService {
                 var client_id = dcrResp.optString(OidcClientMetadataClaimNames.CLIENT_ID);
                 JSONObject jsonObject = new JSONObject(clientRegistrationReq);
                 OAuth2RegisteredClientFDX oAuth2RegisteredClientFDX = saveClientRegistration(client_id,jsonObject);
-                appendClientDataToResponse(dcrResp, oAuth2RegisteredClientFDX);
+                oAuth2RegisteredClientFDXToJSONObject(oAuth2RegisteredClientFDX,dcrResp);
                 resp = ResponseEntity.status(resp.getStatusCode()).body(dcrResp.toString());
             }
             return resp;
@@ -78,23 +76,10 @@ public class DynamicClientRegistrationService {
         }
     }
     OAuth2RegisteredClientFDX saveClientRegistration(String client_id,JSONObject clientRegistrationResponseJson) {
-        OAuth2RegisteredClientFDX client = mapJsonToClient(clientRegistrationResponseJson);
-        client.setId(client_id);
-        return oAuth2RegisteredClientRepository.save(client);
-    }
-
-    private OAuth2RegisteredClientFDX mapJsonToClient(JSONObject json) {
-        return OAuth2RegisteredClientFDX.builder()
-                .clientUri(json.optString(ClientConstant.CLIENT_URI))
-                .contacts(json.optString(ClientConstant.CONTACTS))
-                .description(json.optString(ClientConstant.DESCRIPTION))
-                .durationType(json.optString(ClientConstant.DURATION_TYPE))
-                .durationPeriod(json.optString(ClientConstant.DURATION_PERIOD))
-                .lookbackPeriod(json.optString(ClientConstant.LOOKBACK_PERIOD))
-                .logoUri(json.optString(ClientConstant.LOGO_URI))
-                .registryReferences(json.optString(ClientConstant.REGISTRY_REFERENCES))
-                .intermediaries(json.optString(ClientConstant.INTERMEDIARIES))
-                .build();
+        OAuth2RegisteredClientFDX oAuth2RegisteredClientFDX = new OAuth2RegisteredClientFDX();
+        jSONObjectToOAuth2RegisteredClientFDX(clientRegistrationResponseJson,oAuth2RegisteredClientFDX);
+        oAuth2RegisteredClientFDX.setId(client_id);
+        return oAuth2RegisteredClientRepository.save(oAuth2RegisteredClientFDX);
     }
 
     public ResponseEntity<String> modify(String clientModificationReq, String authorization, String clientId) throws ErrorResponse {
@@ -110,8 +95,15 @@ public class DynamicClientRegistrationService {
 
             RegisteredClient modifiedClient = mapModifications(client, dcrRequest);
             registeredClientRepository.save(modifiedClient);
-
-            return authServerService.getClient(clientId, authorization.replace("Bearer ", ""));
+            ResponseEntity<String> clientResponse = authServerService.getClient(clientId, authorization.replace("Bearer ", ""));
+            if (clientResponse.getStatusCode() == HttpStatus.OK) {
+                OAuth2RegisteredClientFDX fdxClient = oAuth2RegisteredClientRepository.findById(clientId)
+                        .orElseThrow(() -> new ErrorResponse(ERROR_INVALID_CLIENT_METADATA, "Client not found: " + clientId));
+                jSONObjectToOAuth2RegisteredClientFDX(dcrRequest, fdxClient);
+                oAuth2RegisteredClientRepository.save(fdxClient);
+                oAuth2RegisteredClientFDXToJSONObject(fdxClient,dcrRequest);
+            }
+            return ResponseEntity.status(clientResponse.getStatusCode()).body(dcrRequest.toString());
         }
         catch (JSONException ex) {
             log.error("Failed to validate Client JWT " , ex);
@@ -156,13 +148,25 @@ public class DynamicClientRegistrationService {
             OAuth2RegisteredClientFDX fdxClient = oAuth2RegisteredClientRepository.findById(clientId)
                     .orElseThrow(() -> new ErrorResponse(ERROR_INVALID_CLIENT_METADATA, "Client not found: " + clientId));
             var dcrResp = new JSONObject(client.getBody());
-            appendClientDataToResponse(dcrResp, fdxClient);
+            oAuth2RegisteredClientFDXToJSONObject(fdxClient, dcrResp);
             return ResponseEntity.status(client.getStatusCode()).body(dcrResp.toString());
         }
         return client;
     }
 
-    private void appendClientDataToResponse(JSONObject dcrResp, OAuth2RegisteredClientFDX client) {
+    private void jSONObjectToOAuth2RegisteredClientFDX(JSONObject json, OAuth2RegisteredClientFDX client) {
+        client.setClientUri(json.optString(ClientConstant.CLIENT_URI));
+        client.setContacts(json.optString(ClientConstant.CONTACTS));
+        client.setDescription(json.optString(ClientConstant.DESCRIPTION));
+        client.setDurationType(json.optString(ClientConstant.DURATION_TYPE));
+        client.setDurationPeriod(json.optString(ClientConstant.DURATION_PERIOD));
+        client.setLookbackPeriod(json.optString(ClientConstant.LOOKBACK_PERIOD));
+        client.setLogoUri(json.optString(ClientConstant.LOGO_URI));
+        client.setRegistryReferences(json.optString(ClientConstant.REGISTRY_REFERENCES));
+        client.setIntermediaries(json.optString(ClientConstant.INTERMEDIARIES));
+    }
+
+    private void oAuth2RegisteredClientFDXToJSONObject(OAuth2RegisteredClientFDX client, JSONObject dcrResp) {
         dcrResp.put(ClientConstant.CLIENT_URI, client.getClientUri());
         dcrResp.put(ClientConstant.CONTACTS, new JSONArray(client.getContacts()));
         dcrResp.put(ClientConstant.DESCRIPTION, client.getDescription());
@@ -213,4 +217,5 @@ public class DynamicClientRegistrationService {
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(dcrResp.toString());
     }
+
 }
