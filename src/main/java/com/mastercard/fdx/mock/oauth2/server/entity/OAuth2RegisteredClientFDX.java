@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "oauth2_registered_client_fdx_v6_4_0_update")
+@Table(name = "oauth2_registered_client_details")
 @Getter
 @Setter
 @NoArgsConstructor

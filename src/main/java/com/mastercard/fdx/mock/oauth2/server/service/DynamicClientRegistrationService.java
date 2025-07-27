@@ -168,14 +168,18 @@ public class DynamicClientRegistrationService {
 
     private void oAuth2RegisteredClientFDXToJSONObject(OAuth2RegisteredClientFDX client, JSONObject dcrResp) {
         dcrResp.put(ClientConstant.CLIENT_URI, client.getClientUri());
-        dcrResp.put(ClientConstant.CONTACTS, new JSONArray(client.getContacts()));
+        if(null != client.getContacts() && !client.getContacts().isEmpty())
+            dcrResp.put(ClientConstant.CONTACTS, new JSONArray(client.getContacts()));
         dcrResp.put(ClientConstant.DESCRIPTION, client.getDescription());
-        dcrResp.put(ClientConstant.DURATION_TYPE, new JSONArray(client.getDurationType()));
+        if(null != client.getDurationType() && !client.getDurationType().isEmpty())
+            dcrResp.put(ClientConstant.DURATION_TYPE, new JSONArray(client.getDurationType()));
         dcrResp.put(ClientConstant.DURATION_PERIOD, client.getDurationPeriod());
         dcrResp.put(ClientConstant.LOOKBACK_PERIOD, client.getLookbackPeriod());
         dcrResp.put(ClientConstant.LOGO_URI, client.getLogoUri());
-        dcrResp.put(ClientConstant.REGISTRY_REFERENCES, new JSONArray(client.getRegistryReferences()));
-        dcrResp.put(ClientConstant.INTERMEDIARIES, new JSONArray(client.getIntermediaries()));
+        if(null != client.getRegistryReferences() && !client.getRegistryReferences().isEmpty())
+            dcrResp.put(ClientConstant.REGISTRY_REFERENCES, new JSONArray(client.getRegistryReferences()));
+        if(null != client.getIntermediaries() && !client.getIntermediaries().isEmpty())
+            dcrResp.put(ClientConstant.INTERMEDIARIES, new JSONArray(client.getIntermediaries()));
     }
 
     public ResponseEntity<String> delete(String clientId, String authorization) throws ErrorResponse {
