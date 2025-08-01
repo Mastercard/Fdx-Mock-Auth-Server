@@ -189,7 +189,7 @@ public class DynamicClientRegistrationService {
         if (deletedClientId == null) {
             throw new ErrorResponse(ERROR_INVALID_CLIENT_METADATA, deletedClientId);
         }
-        // delete from oauth2_registered_client_fdx_v6_4_0_update table
+        // delete from oauth2_registered_client_details table
         oAuth2RegisteredClientRepository.deleteById(clientId);
         return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)

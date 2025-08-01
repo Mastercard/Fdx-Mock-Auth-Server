@@ -1,4 +1,4 @@
-CREATE TABLE oauth2_registered_client_fdx_v6_4_0_update
+CREATE TABLE oauth2_registered_client_details
 (
     id                  VARCHAR(100) PRIMARY KEY,
     client_uri          VARCHAR(1000),

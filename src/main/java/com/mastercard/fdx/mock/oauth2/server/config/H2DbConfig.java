@@ -38,7 +38,7 @@ public class H2DbConfig {
 		executeScript(dataSource,"scripts/sql/add-dh-adr-client-registrar.sql");
 		executeScript(dataSource,"scripts/sql/push-authorization-request-schema.sql");
 		executeScript(dataSource,"scripts/sql/customer-consent.sql");
-		executeScript(dataSource,"scripts/sql/oauth2_registered_client_fdx_v6_4_0_update.sql");
+		executeScript(dataSource, "scripts/sql/oauth2_registered_client_details.sql");
 		return dataSource;
 	}
 
