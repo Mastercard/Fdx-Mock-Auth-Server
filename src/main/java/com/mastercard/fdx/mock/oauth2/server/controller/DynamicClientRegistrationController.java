@@ -2,7 +2,7 @@ package com.mastercard.fdx.mock.oauth2.server.controller;
 
 import com.mastercard.fdx.mock.oauth2.server.common.ErrorResponse;
 import com.mastercard.fdx.mock.oauth2.server.service.DynamicClientRegistrationService;
-import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Safelist;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +24,7 @@ public class DynamicClientRegistrationController {
      * @param clientRegistrationReq
      * @return
      */
-    @PostMapping(path = "/register")
+    @PostMapping(path = "/register", produces = "application/json")
     public ResponseEntity<String> register(@RequestBody String clientRegistrationReq) {
         try {
             clientRegistrationReq = Jsoup.clean(StringEscapeUtils.escapeHtml4(clientRegistrationReq), Safelist.basic());
@@ -41,7 +41,7 @@ public class DynamicClientRegistrationController {
      * @param authorization
      * @return
      */
-    @PutMapping(path = "/register/{clientId}")
+    @PutMapping(path = "/register/{clientId}", produces = "application/json")
     public ResponseEntity<String> modify(@RequestBody String clientModificationReq,
                                          @PathVariable("clientId") String clientId,
                                          @RequestHeader(AUTHORIZATION) String authorization) {
@@ -59,7 +59,7 @@ public class DynamicClientRegistrationController {
      * @param authorization
      * @return
      */
-    @GetMapping(path = "/register/{clientId}")
+    @GetMapping(path = "/register/{clientId}", produces = "application/json")
     public ResponseEntity<String> get(@PathVariable("clientId") String clientId, @RequestHeader(AUTHORIZATION) String authorization) {
         try {
             authorization = Jsoup.clean(StringEscapeUtils.escapeHtml4(authorization), Safelist.basic());
