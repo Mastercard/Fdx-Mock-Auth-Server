@@ -25,10 +25,12 @@ public class DynamicClientRegistrationController {
      * @return
      */
     @PostMapping(path = "/register", produces = "application/json")
-    public ResponseEntity<String> register(@RequestBody String clientRegistrationReq) {
+    public ResponseEntity<String> register(@RequestBody(required = false) String clientRegistrationReq) {
         try {
-            clientRegistrationReq = Jsoup.clean(StringEscapeUtils.escapeHtml4(clientRegistrationReq), Safelist.basic());
-             return dcrService.register(clientRegistrationReq);
+            if (clientRegistrationReq != null) {
+                clientRegistrationReq = Jsoup.clean(StringEscapeUtils.escapeHtml4(clientRegistrationReq), Safelist.basic());
+            }
+            return dcrService.register(clientRegistrationReq);
         } catch (ErrorResponse ex) {
             return new ResponseEntity<>(ex.toString(), HttpStatus.BAD_REQUEST);
         }
@@ -42,11 +44,13 @@ public class DynamicClientRegistrationController {
      * @return
      */
     @PutMapping(path = "/register/{clientId}", produces = "application/json")
-    public ResponseEntity<String> modify(@RequestBody String clientModificationReq,
+    public ResponseEntity<String> modify(@RequestBody(required = false) String clientModificationReq,
                                          @PathVariable("clientId") String clientId,
                                          @RequestHeader(AUTHORIZATION) String authorization) {
         try {
-            clientModificationReq = Jsoup.clean(StringEscapeUtils.escapeHtml4(clientModificationReq), Safelist.basic());
+            if (clientModificationReq != null) {
+                clientModificationReq = Jsoup.clean(StringEscapeUtils.escapeHtml4(clientModificationReq), Safelist.basic());
+            }
             return dcrService.modify(clientModificationReq, authorization, clientId);
         } catch (ErrorResponse ex) {
             return new ResponseEntity<>(ex.toString(), HttpStatus.BAD_REQUEST);
