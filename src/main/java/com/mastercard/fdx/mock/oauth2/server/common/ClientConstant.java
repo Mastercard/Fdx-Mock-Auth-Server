@@ -3,6 +3,11 @@ package com.mastercard.fdx.mock.oauth2.server.common;
 public class ClientConstant {
     private ClientConstant() {}
 
+    public static final String CLIENT_NAME = "client_name";
+    public static final String REDIRECT_URIS = "redirect_uris";
+    public static final String SCOPE = "scope";
+    public static final String STATUS = "status";
+    public static final String STATUS_APPROVED = "Approved";
     public static final String CLIENT_URI = "client_uri";
     public static final String CONTACTS = "contacts";
     public static final String DESCRIPTION = "description";
