@@ -54,6 +54,7 @@ public class DynamicClientRegistrationService {
     public ResponseEntity<String> register(String clientRegistrationReq) throws ErrorResponse {
         try {
             var dcrRequest = parsePayload(clientRegistrationReq);
+            validateRegistrationRequest(dcrRequest);
             String accessToken = getAccessToken();
 
             // 5. Post the Client Registration to Spring AS Install DCR register.
@@ -66,6 +67,7 @@ public class DynamicClientRegistrationService {
                 JSONObject jsonObject = new JSONObject(clientRegistrationReq);
                 OAuth2RegisteredClientFDX oAuth2RegisteredClientFDX = saveClientRegistration(client_id,jsonObject);
                 oAuth2RegisteredClientFDXToJSONObject(oAuth2RegisteredClientFDX,dcrResp);
+                dcrResp.put(ClientConstant.STATUS, ClientConstant.STATUS_APPROVED);
                 resp = ResponseEntity.status(resp.getStatusCode()).body(dcrResp.toString());
             }
             return resp;
@@ -87,6 +89,7 @@ public class DynamicClientRegistrationService {
             validateAuthorization(authorization, clientId);
 
             var dcrRequest = parsePayload(clientModificationReq);
+            validateRegistrationRequest(dcrRequest);
 
             RegisteredClient client = registeredClientRepository.findByClientId(clientId);
             if(client == null) {
@@ -102,6 +105,7 @@ public class DynamicClientRegistrationService {
                 jSONObjectToOAuth2RegisteredClientFDX(dcrRequest, fdxClient);
                 oAuth2RegisteredClientRepository.save(fdxClient);
                 oAuth2RegisteredClientFDXToJSONObject(fdxClient,dcrRequest);
+                dcrRequest.put(ClientConstant.STATUS, ClientConstant.STATUS_APPROVED);
             }
             return ResponseEntity.status(clientResponse.getStatusCode()).body(dcrRequest.toString());
         }
@@ -121,14 +125,34 @@ public class DynamicClientRegistrationService {
 
     private RegisteredClient mapModifications(RegisteredClient client, JSONObject dcrRequest) {
 
-        return RegisteredClient.from(client)
-                .clientName(dcrRequest.getString("client_name"))
-                .scopes(scopes -> {
-                    scopes.clear();
-                    scopes.addAll(Arrays.asList(dcrRequest.getString("scope").split(" ")));
-                })
-                .redirectUris(getRedirectUrlsMapping(dcrRequest))
-                .build();
+        RegisteredClient.Builder builder = RegisteredClient.from(client)
+                .clientName(dcrRequest.getString(ClientConstant.CLIENT_NAME))
+                .redirectUris(getRedirectUrlsMapping(dcrRequest));
+
+        String scope = dcrRequest.optString(ClientConstant.SCOPE, "").trim();
+        if (!scope.isEmpty()) {
+            builder.scopes(scopes -> {
+                scopes.clear();
+                scopes.addAll(Arrays.asList(scope.split(" ")));
+            });
+        }
+        return builder.build();
+    }
+
+    /**
+     * Validates that the FDX v6.5 RecipientRequest required fields are present.
+     * Per spec, client_name and redirect_uris are mandatory.
+     */
+    private void validateRegistrationRequest(JSONObject req) throws ErrorResponse {
+        String clientName = req.optString(ClientConstant.CLIENT_NAME, "").trim();
+        if (clientName.isEmpty()) {
+            throw new ErrorResponse(ERROR_INVALID_CLIENT_METADATA, "client_name is required");
+        }
+        JSONArray redirectUris = req.optJSONArray(ClientConstant.REDIRECT_URIS);
+        if (redirectUris == null || redirectUris.length() == 0) {
+            throw new ErrorResponse(ERROR_INVALID_CLIENT_METADATA,
+                    "redirect_uris is required and must contain at least one URI");
+        }
     }
 
     private static Consumer<Set<String>> getRedirectUrlsMapping(JSONObject dcrRequest) {
@@ -149,6 +173,7 @@ public class DynamicClientRegistrationService {
                     .orElseThrow(() -> new ErrorResponse(ERROR_INVALID_CLIENT_METADATA, "Client not found: " + clientId));
             var dcrResp = new JSONObject(client.getBody());
             oAuth2RegisteredClientFDXToJSONObject(fdxClient, dcrResp);
+            dcrResp.put(ClientConstant.STATUS, ClientConstant.STATUS_APPROVED);
             return ResponseEntity.status(client.getStatusCode()).body(dcrResp.toString());
         }
         return client;
@@ -173,13 +198,20 @@ public class DynamicClientRegistrationService {
         dcrResp.put(ClientConstant.DESCRIPTION, client.getDescription());
         if(null != client.getDurationType() && !client.getDurationType().isEmpty())
             dcrResp.put(ClientConstant.DURATION_TYPE, new JSONArray(client.getDurationType()));
-        dcrResp.put(ClientConstant.DURATION_PERIOD, client.getDurationPeriod());
-        dcrResp.put(ClientConstant.LOOKBACK_PERIOD, client.getLookbackPeriod());
+        putIntegerField(dcrResp, ClientConstant.DURATION_PERIOD, client.getDurationPeriod());
+        putIntegerField(dcrResp, ClientConstant.LOOKBACK_PERIOD, client.getLookbackPeriod());
         dcrResp.put(ClientConstant.LOGO_URI, client.getLogoUri());
         if(null != client.getRegistryReferences() && !client.getRegistryReferences().isEmpty())
             dcrResp.put(ClientConstant.REGISTRY_REFERENCES, new JSONArray(client.getRegistryReferences()));
         if(null != client.getIntermediaries() && !client.getIntermediaries().isEmpty())
             dcrResp.put(ClientConstant.INTERMEDIARIES, new JSONArray(client.getIntermediaries()));
+    }
+
+    private static void putIntegerField(JSONObject response, String fieldName, String value) {
+        if (Strings.isBlank(value)) {
+            return;
+        }
+        response.put(fieldName, Integer.parseInt(value));
     }
 
     public ResponseEntity<String> delete(String clientId, String authorization) throws ErrorResponse {
@@ -203,6 +235,9 @@ public class DynamicClientRegistrationService {
     }
 
     private static JSONObject parsePayload(String clientRegistrationReq) throws JSONException {
+        if (Strings.isBlank(clientRegistrationReq)) {
+            throw new JSONException("Request body is required");
+        }
         return new JSONObject(clientRegistrationReq);
     }
 
