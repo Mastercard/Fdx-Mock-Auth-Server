@@ -19,9 +19,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
+import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
 
 import java.text.ParseException;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -181,6 +185,9 @@ class DynamicClientRegistrationServiceTest {
         assertEquals("xv4ZdeIN4QyLbpGtjFi8nMsnT2xK2MFCCX1gx0T8XqU", respJson.getString("client_id"));
         assertEquals("11TestName1221", respJson.getString("client_name"));
         assertEquals("client.create client.read", respJson.getString("scope"));
+        assertEquals(365, respJson.getInt(ClientConstant.DURATION_PERIOD));
+        assertEquals(365, respJson.getInt(ClientConstant.LOOKBACK_PERIOD));
+        assertEquals(ClientConstant.STATUS_APPROVED, respJson.getString(ClientConstant.STATUS));
     }
 
     @Test
@@ -226,11 +233,12 @@ class DynamicClientRegistrationServiceTest {
         assertEquals("[\"support@example.com\"]", responseBody.getJSONArray(ClientConstant.CONTACTS).toString());
         assertEquals("Test Description", responseBody.getString(ClientConstant.DESCRIPTION));
         assertEquals("[\"TIME_BOUND\"]", responseBody.getJSONArray(ClientConstant.DURATION_TYPE).toString());
-        assertEquals("365", responseBody.getString(ClientConstant.DURATION_PERIOD));
-        assertEquals("365", responseBody.getString(ClientConstant.LOOKBACK_PERIOD));
+        assertEquals(365, responseBody.getInt(ClientConstant.DURATION_PERIOD));
+        assertEquals(365, responseBody.getInt(ClientConstant.LOOKBACK_PERIOD));
         assertEquals("https://example.com/logo.png", responseBody.getString(ClientConstant.LOGO_URI));
         assertEquals("[{\"registered_entity_id\":\"12345\",\"registry\":\"GLEIF\"}]", responseBody.getJSONArray(ClientConstant.REGISTRY_REFERENCES).toString());
         assertEquals("[{\"name\":\"Intermediary Name\"}]", responseBody.getJSONArray(ClientConstant.INTERMEDIARIES).toString());
+        assertEquals(ClientConstant.STATUS_APPROVED, responseBody.getString(ClientConstant.STATUS));
     }
 
     @Test
@@ -277,8 +285,12 @@ class DynamicClientRegistrationServiceTest {
     @Test
     void testDeleteClient() throws ErrorResponse {
         when(clientDeletionService.deleteClient("a")).thenReturn("a");
-        dcrService.delete("a", "qrst");
+        ResponseEntity<String> response = dcrService.delete("a", "qrst");
+
+        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+        assertEquals("", response.getBody());
         verify(clientDeletionService).deleteClient("a");
+        verify(oAuth2RegisteredClientRepository).deleteById("a");
     }
 
     @Test
@@ -369,6 +381,171 @@ class DynamicClientRegistrationServiceTest {
         ArgumentCaptor<OAuth2RegisteredClientFDX> clientCaptor = ArgumentCaptor.forClass(OAuth2RegisteredClientFDX.class);
         verify(oAuth2RegisteredClientRepository).save(clientCaptor.capture());
         assertEquals(clientId, clientCaptor.getValue().getId());
+    }
+
+    // ---------- FDX v6.5 Story 1: required-field validation (GAP 1) ----------
+
+    @Test
+    void testRegister_EmptyBody_Throws() {
+        ErrorResponse ex = assertThrows(ErrorResponse.class, () -> dcrService.register("{}"));
+        assertEquals(DynamicClientRegistrationService.ERROR_INVALID_CLIENT_METADATA, ex.getError());
+    }
+
+    @Test
+    void testRegister_BlankHttpBody_Throws() {
+        ErrorResponse ex = assertThrows(ErrorResponse.class, () -> dcrService.register(""));
+        assertEquals(DynamicClientRegistrationService.ERROR_INVALID_CLIENT_METADATA, ex.getError());
+        assertEquals("Request body is required", ex.getErrorDescription());
+    }
+
+    @Test
+    void testRegister_NullHttpBody_Throws() {
+        ErrorResponse ex = assertThrows(ErrorResponse.class, () -> dcrService.register(null));
+        assertEquals(DynamicClientRegistrationService.ERROR_INVALID_CLIENT_METADATA, ex.getError());
+        assertEquals("Request body is required", ex.getErrorDescription());
+    }
+
+    @Test
+    void testRegister_MissingClientName_Throws() {
+        ErrorResponse ex = assertThrows(ErrorResponse.class,
+                () -> dcrService.register("{\"redirect_uris\":[\"https://cb.example/callback\"]}"));
+        assertEquals(DynamicClientRegistrationService.ERROR_INVALID_CLIENT_METADATA, ex.getError());
+        assertTrue(ex.getErrorDescription().contains("client_name"));
+    }
+
+    @Test
+    void testRegister_BlankClientName_Throws() {
+        ErrorResponse ex = assertThrows(ErrorResponse.class,
+                () -> dcrService.register("{\"client_name\":\"   \",\"redirect_uris\":[\"https://cb.example/callback\"]}"));
+        assertEquals(DynamicClientRegistrationService.ERROR_INVALID_CLIENT_METADATA, ex.getError());
+        assertTrue(ex.getErrorDescription().contains("client_name"));
+    }
+
+    @Test
+    void testRegister_MissingRedirectUris_Throws() {
+        ErrorResponse ex = assertThrows(ErrorResponse.class,
+                () -> dcrService.register("{\"client_name\":\"Acme\"}"));
+        assertEquals(DynamicClientRegistrationService.ERROR_INVALID_CLIENT_METADATA, ex.getError());
+        assertTrue(ex.getErrorDescription().contains("redirect_uris"));
+    }
+
+    @Test
+    void testRegister_EmptyRedirectUris_Throws() {
+        ErrorResponse ex = assertThrows(ErrorResponse.class,
+                () -> dcrService.register("{\"client_name\":\"Acme\",\"redirect_uris\":[]}"));
+        assertEquals(DynamicClientRegistrationService.ERROR_INVALID_CLIENT_METADATA, ex.getError());
+        assertTrue(ex.getErrorDescription().contains("redirect_uris"));
+    }
+
+    // ---------- FDX v6.5 Story 1: PUT with optional scope must not fail (GAP 2) ----------
+
+    @Test
+    void testModify_WithoutScope_DoesNotFail() throws Throwable {
+        String clientId = "abc-client";
+        String payload = """
+                {
+                  "client_name": "Acme Updated",
+                  "redirect_uris": ["https://acme.example/callback"]
+                }
+                """;
+
+        RegisteredClient existing = RegisteredClient.withId(clientId)
+                .clientId(clientId)
+                .clientName("Acme")
+                .clientAuthenticationMethod(ClientAuthenticationMethod.PRIVATE_KEY_JWT)
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .redirectUri("https://acme.example/callback")
+                .scope("existing.scope")
+                .build();
+        when(registeredClientRepository.findByClientId(clientId)).thenReturn(existing);
+        when(authServerService.getClient(eq(clientId), anyString()))
+                .thenReturn(new ResponseEntity<>(
+                        "{\"client_id\":\"abc-client\",\"client_name\":\"Acme Updated\"}", HttpStatus.OK));
+
+        OAuth2RegisteredClientFDX fdxClient = new OAuth2RegisteredClientFDX();
+        fdxClient.setId(clientId);
+        when(oAuth2RegisteredClientRepository.findById(clientId)).thenReturn(Optional.of(fdxClient));
+
+        ResponseEntity<String> resp = dcrService.modify(payload, "Bearer token", clientId);
+
+        assertEquals(HttpStatus.OK, resp.getStatusCode());
+        JSONObject respJson = new JSONObject(resp.getBody());
+        assertEquals(ClientConstant.STATUS_APPROVED, respJson.getString(ClientConstant.STATUS));
+    }
+
+    @Test
+    void testRegister_LegacyV60Payload_RemainsCompatible() throws ErrorResponse {
+        String legacyPayload = """
+                {
+                  "client_name": "11TestName1221",
+                  "redirect_uris": ["https://oauth.pstmn.io/v1/browser-callback"],
+                  "jwks_uri": "https://www.jsonkeeper.com/b/3FJT",
+                  "scope": "client.create client.read",
+                  "token_endpoint_auth_method": "private_key_jwt",
+                  "token_endpoint_auth_signing_alg": "PS256",
+                  "grant_types": ["client_credentials", "authorization_code", "refresh_token"],
+                  "response_types": ["code"],
+                  "id_token_signed_response_alg": "PS256",
+                  "id_token_encrypted_response_alg": "RSA-OAEP",
+                  "id_token_encrypted_response_enc": "A256GCM",
+                  "request_object_signing_alg": "PS256"
+                }
+                """;
+
+        when(authServerService.getAccessToken(any(), any())).thenReturn("DUMMY_ACCESS_TOKEN");
+        when(authServerService.registerClient(any(), anyString()))
+                .thenReturn(new ResponseEntity<>(validOriginalDcrApiResponse, HttpStatus.CREATED));
+
+        OAuth2RegisteredClientFDX savedClient = new OAuth2RegisteredClientFDX();
+        savedClient.setId("xv4ZdeIN4QyLbpGtjFi8nMsnT2xK2MFCCX1gx0T8XqU");
+        when(oAuth2RegisteredClientRepository.save(any(OAuth2RegisteredClientFDX.class)))
+                .thenReturn(savedClient);
+
+        ResponseEntity<String> response = dcrService.register(legacyPayload);
+
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        JSONObject responseBody = new JSONObject(response.getBody());
+        assertEquals("11TestName1221", responseBody.getString(ClientConstant.CLIENT_NAME));
+        assertEquals("client.create client.read", responseBody.getString(ClientConstant.SCOPE));
+        assertEquals(ClientConstant.STATUS_APPROVED, responseBody.getString(ClientConstant.STATUS));
+        verify(authServerService).registerClient(any(JSONObject.class), eq("DUMMY_ACCESS_TOKEN"));
+    }
+
+    @Test
+    void testModify_WithScope_PreservesExistingReplacementBehavior() throws Throwable {
+        String clientId = "abc-client";
+        String payload = """
+                {
+                  "client_name": "Acme Updated",
+                  "redirect_uris": ["https://acme.example/callback"],
+                  "scope": "client.read client.write"
+                }
+                """;
+
+        RegisteredClient existing = RegisteredClient.withId(clientId)
+                .clientId(clientId)
+                .clientName("Acme")
+                .clientAuthenticationMethod(ClientAuthenticationMethod.PRIVATE_KEY_JWT)
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .redirectUri("https://acme.example/old-callback")
+                .scope("existing.scope")
+                .build();
+        when(registeredClientRepository.findByClientId(clientId)).thenReturn(existing);
+        when(authServerService.getClient(eq(clientId), anyString()))
+                .thenReturn(new ResponseEntity<>(
+                        "{\"client_id\":\"abc-client\",\"client_name\":\"Acme Updated\"}", HttpStatus.OK));
+
+        OAuth2RegisteredClientFDX fdxClient = new OAuth2RegisteredClientFDX();
+        fdxClient.setId(clientId);
+        when(oAuth2RegisteredClientRepository.findById(clientId)).thenReturn(Optional.of(fdxClient));
+
+        dcrService.modify(payload, "Bearer legacy-token", clientId);
+
+        ArgumentCaptor<RegisteredClient> clientCaptor = ArgumentCaptor.forClass(RegisteredClient.class);
+        verify(registeredClientRepository).save(clientCaptor.capture());
+        RegisteredClient modifiedClient = clientCaptor.getValue();
+        assertEquals(Set.of("client.read", "client.write"), modifiedClient.getScopes());
+        assertEquals(Set.of("https://acme.example/callback"), modifiedClient.getRedirectUris());
     }
 
 }
